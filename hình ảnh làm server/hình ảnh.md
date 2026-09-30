@@ -1,0 +1,1 @@
+- chứa ảnh dùng để làm quyển báo cáo
