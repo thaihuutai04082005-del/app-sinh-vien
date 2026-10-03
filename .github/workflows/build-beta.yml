@@ -1,0 +1,42 @@
+name: Build UniHub beta
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - mobile/**
+      - .github/workflows/build-beta.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.2
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
+      - name: Build web beta
+        run: flutter build web --release --base-href /unihub-beta/
+      - name: Upload web build
+        uses: actions/upload-artifact@v7
+        with:
+          name: unihub-beta-web
+          path: mobile/build/web
+          retention-days: 14
