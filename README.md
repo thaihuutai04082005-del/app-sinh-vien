@@ -19,8 +19,8 @@ Nhấp đúp `start.bat` (lối vào mặc định), hoặc chạy:
 
 ```powershell
 cd mobile
-F:\Apps\flutter\bin\flutter.bat pub get
-F:\Apps\flutter\bin\flutter.bat run -d chrome
+flutter pub get
+flutter run -d chrome
 ```
 
 Để chạy Android cần cài thêm Android Studio và Android SDK.
@@ -35,6 +35,6 @@ Nhấp đúp `start-cloudflare-demo.bat` để có link công khai `https://...t
 
 ```powershell
 cd mobile
-F:\Apps\flutter\bin\flutter.bat test
-F:\Apps\flutter\bin\flutter.bat analyze
+flutter test
+flutter analyze
 ```
