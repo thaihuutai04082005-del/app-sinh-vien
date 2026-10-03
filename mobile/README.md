@@ -28,6 +28,6 @@ flutter analyze
 flutter run -d chrome
 ```
 
-Có thể nhấp đúp `start.bat` ở thư mục gốc để chạy ứng dụng Flutter trên Chrome. `start-mobile.bat` được giữ làm tên gọi tương thích và chuyển tiếp về cùng file này.
+Có thể nhấp đúp `start.bat` ở thư mục gốc để chạy ứng dụng Flutter trên Chrome.
 
 Để chạy Android, cần cài Android Studio/Android SDK, sau đó chạy lại `flutter doctor`.
