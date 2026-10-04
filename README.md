@@ -6,7 +6,7 @@ UniHub gom các nhu cầu thường ngày của sinh viên vào một nền tả
 
 Bản Flutter Web công khai dành cho người dùng thử:
 
-**https://huongvip0987.github.io/unihub-beta/**
+**https://appsinhvien-810a2.web.app**
 
 Bản beta dùng dữ liệu minh họa có gắn nhãn rõ ràng. Nhiều người có thể mở cùng đường link để kiểm thử giao diện. Dữ liệu tài khoản và nội dung dùng chung sẽ được bật sau khi dự án Firebase thật được cấu hình.
 
@@ -17,6 +17,7 @@ Bản beta dùng dữ liệu minh họa có gắn nhãn rõ ràng. Nhiều ngư�
 
 ```powershell
 npx firebase-tools deploy --only firestore
+npx firebase-tools deploy --only hosting   # sau khi chạy flutter build web --release trong mobile/
 npx firebase-tools deploy --only storage   # sau khi đã bật Storage (cần gói Blaze)
 ```
 
