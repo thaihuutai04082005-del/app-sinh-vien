@@ -14,7 +14,6 @@ dependencies:
   flutter:
     sdk: flutter
   google_maps_flutter: ^2.18.0
-  http: ^1.6.0
   image_picker: ^1.2.3
   video_player: ^2.14.0
 

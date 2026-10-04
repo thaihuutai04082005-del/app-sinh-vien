@@ -149,12 +149,12 @@ class HomePage extends StatelessWidget {
     final page = switch (index) {
       0 => HousingPage(repository: DemoHousingRepository()),
       2 => XeDonTroScreen(
-        service: CloudflareBookingXeService(),
-        storage: CloudflareImageStorageService(),
+        service: FirestoreBookingXeService(),
+        storage: FirebaseImageStorageService(),
       ),
       3 => ShopScreen(
-        service: CloudflareProductService(),
-        storage: CloudflareImageStorageService(),
+        service: FirestoreProductService(),
+        storage: FirebaseImageStorageService(),
       ),
       _ => EmptyFeaturePage(
         title: module.label,

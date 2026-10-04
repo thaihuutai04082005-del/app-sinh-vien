@@ -1,11 +1,10 @@
+import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:http/http.dart' as http;
-
-import 'api_client.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 /// Nơi lưu ảnh. Giao diện chỉ phụ thuộc vào interface này nên có thể đổi
-/// Cloudflare R2 sang Firebase Storage mà không phải sửa màn hình nào.
+/// nơi lưu mà không phải sửa màn hình nào.
 abstract interface class ImageStorageService {
   /// Upload ảnh vào [folder] (VD: `products`, `booking_xe`) và trả về URL công khai.
   Future<String> upload({
@@ -24,17 +23,26 @@ class ImageUploadException implements Exception {
   String toString() => message;
 }
 
-/// Upload qua Cloudflare Worker (`cloudflare/image-api`), ảnh được lưu trên R2.
-class CloudflareImageStorageService implements ImageStorageService {
-  CloudflareImageStorageService({Uri? baseUrl, http.Client? client})
-    : _baseUrl = baseUrl ?? defaultApiBaseUrl,
-      _client = client ?? http.Client();
+/// Upload lên Firebase Storage, chỉ lưu URL trả về vào Firestore (mục 7.4.5).
+/// Giới hạn dung lượng và loại file được kiểm tra lại trong `storage.rules`.
+class FirebaseImageStorageService implements ImageStorageService {
+  FirebaseImageStorageService({this._storage});
 
-  /// Ảnh tối đa 5 MB, video tối đa 25 MB (server kiểm tra lại theo loại file).
-  static const maxBytes = 25 * 1024 * 1024;
+  static const maxImageBytes = 5 * 1024 * 1024;
+  static const maxVideoBytes = 25 * 1024 * 1024;
 
-  final Uri _baseUrl;
-  final http.Client _client;
+  static const _contentTypes = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'webp': 'image/webp',
+    'gif': 'image/gif',
+    'mp4': 'video/mp4',
+    'mov': 'video/quicktime',
+    'webm': 'video/webm',
+  };
+
+  final FirebaseStorage? _storage;
 
   @override
   Future<String> upload({
@@ -42,30 +50,36 @@ class CloudflareImageStorageService implements ImageStorageService {
     required String fileName,
     required String folder,
   }) async {
-    if (bytes.length > maxBytes) {
-      throw const ImageUploadException('File vượt quá 25 MB.');
-    }
-
-    final request =
-        http.MultipartRequest('POST', _baseUrl.resolve('/api/upload'))
-          ..fields['folder'] = folder
-          ..files.add(
-            http.MultipartFile.fromBytes('file', bytes, filename: fileName),
-          );
-
-    final http.Response response;
-    try {
-      response = await http.Response.fromStream(await _client.send(request));
-    } catch (_) {
-      throw const ImageUploadException('Không kết nối được máy chủ.');
-    }
-
-    final body = decodeJsonObject(response.bodyBytes);
-    if (response.statusCode != 200 || body['url'] is! String) {
-      throw ImageUploadException(
-        body['error'] as String? ?? 'Upload thất bại (${response.statusCode}).',
+    final ext = fileName.split('.').last.toLowerCase();
+    final contentType = _contentTypes[ext];
+    if (contentType == null) {
+      throw const ImageUploadException(
+        'Chỉ chấp nhận ảnh JPG, PNG, WEBP, GIF hoặc video MP4, MOV, WEBM.',
       );
     }
-    return body['url'] as String;
+    final isVideo = contentType.startsWith('video/');
+    if (bytes.length > (isVideo ? maxVideoBytes : maxImageBytes)) {
+      throw ImageUploadException(
+        isVideo ? 'Video vượt quá 25 MB.' : 'Ảnh vượt quá 5 MB.',
+      );
+    }
+
+    final ref = (_storage ?? FirebaseStorage.instance).ref(
+      '$folder/${_randomId()}.$ext',
+    );
+    try {
+      await ref.putData(bytes, SettableMetadata(contentType: contentType));
+      return await ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      throw ImageUploadException('Upload thất bại (${e.code}).');
+    }
+  }
+
+  static String _randomId() {
+    final random = Random.secure();
+    return List.generate(
+      20,
+      (_) => random.nextInt(36).toRadixString(36),
+    ).join();
   }
 }

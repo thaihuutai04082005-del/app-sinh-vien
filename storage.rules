@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Ai cũng xem được; chỉ được upload file mới (không ghi đè, không xóa),
+// ảnh tối đa 5 MB, video tối đa 25 MB, vào đúng thư mục của module.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{folder}/{fileName} {
+      allow read: if folder in ['products', 'booking_xe'];
+      allow create: if folder in ['products', 'booking_xe']
+        && resource == null
+        && ((request.resource.contentType.matches('image/.*')
+             && request.resource.size <= 5 * 1024 * 1024)
+          || (request.resource.contentType.matches('video/.*')
+             && request.resource.size <= 25 * 1024 * 1024));
+    }
+  }
+}

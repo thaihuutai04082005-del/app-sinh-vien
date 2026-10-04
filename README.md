@@ -11,6 +11,14 @@ Bản Flutter Web công khai dành cho người dùng thử:
 Bản beta dùng dữ liệu minh họa có gắn nhãn rõ ràng. Nhiều người có thể mở cùng đường link để kiểm thử giao diện. Dữ liệu tài khoản và nội dung dùng chung sẽ được bật sau khi dự án Firebase thật được cấu hình.
 
 - `mobile/`: ứng dụng Flutter chính, bám theo `mo-hinh-app-sinh-vien-1.md`.
+- Backend: Firebase project `appsinhvien-810a2` (Firestore ở `asia-southeast1`). Quy tắc bảo mật nằm ở `firestore.rules` và `storage.rules`.
+
+## Cập nhật quy tắc Firebase
+
+```powershell
+npx firebase-tools deploy --only firestore
+npx firebase-tools deploy --only storage   # sau khi đã bật Storage (cần gói Blaze)
+```
 
 ## Chạy ứng dụng Flutter
 
