@@ -119,7 +119,7 @@ class _DangSanPhamScreenState extends State<DangSanPhamScreen> {
               storage: widget.storage,
               folder: 'products',
               helperText:
-                  'Quay cận chất vải, form dáng khi mặc (khoảng 30–60 giây).',
+                  'Quay cận chất vải, form dáng khi mặc (khoảng 30 giây).',
               pickVideo: widget.pickVideo,
               onChanged: (urls, isUploading) => setState(() {
                 _videos = urls;

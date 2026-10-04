@@ -176,7 +176,7 @@ class _DatXeScreenState extends State<DatXeScreen> {
             VideoUploadField(
               storage: widget.storage,
               folder: 'booking_xe',
-              helperText: 'Quay một vòng phòng để tài xế thấy hết đồ cần chuyển (khoảng 30–60 giây).',
+              helperText: 'Quay một vòng phòng để tài xế thấy hết đồ cần chuyển (khoảng 30 giây).',
               pickVideo: widget.pickVideo,
               onChanged: (urls, isUploading) => setState(() {
                 _videos = urls;

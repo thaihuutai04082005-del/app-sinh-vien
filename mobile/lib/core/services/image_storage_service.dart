@@ -77,7 +77,19 @@ class FirebaseImageStorageService implements ImageStorageService {
     }
     final ref = (_storage ?? FirebaseStorage.instance).ref(path);
     try {
-      await ref.putData(bytes, SettableMetadata(contentType: contentType));
+      final metadata = SettableMetadata(
+        contentType: contentType,
+        cacheControl: 'public, max-age=31536000, immutable',
+      );
+      try {
+        await ref.putData(bytes, metadata);
+      } on FirebaseException catch (e) {
+        // Lượt upload đầu tiên ngay sau khi vừa đăng nhập ẩn danh đôi khi bị
+        // từ chối; thử lại 1 lần với cùng tên file đã giữ chỗ.
+        if (e.code != 'unauthorized') rethrow;
+        await Future<void>.delayed(const Duration(seconds: 2));
+        await ref.putData(bytes, metadata);
+      }
       return await ref.getDownloadURL();
     } on FirebaseException catch (e) {
       throw ImageUploadException('Upload thất bại (${e.code}).');
