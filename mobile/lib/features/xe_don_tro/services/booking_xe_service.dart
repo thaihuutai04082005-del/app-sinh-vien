@@ -1,18 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../core/services/daily_quota.dart';
 import '../models/booking_xe.dart';
 
 abstract interface class BookingXeService {
   Future<List<BookingXe>> getDanhSachYeuCau();
 
-  /// Lưu yêu cầu mới; Firestore gán id, status = "pending".
+  /// Lưu yêu cầu mới; gán id, userId = uid người gửi, status = "pending".
   Future<BookingXe> guiYeuCau(BookingXe booking);
 }
 
 class FirestoreBookingXeService implements BookingXeService {
-  FirestoreBookingXeService({this._firestore});
+  FirestoreBookingXeService({this._firestore, DailyQuota? quota})
+    : _quota = quota ?? DailyQuota(_firestore);
 
   final FirebaseFirestore? _firestore;
+  final DailyQuota _quota;
 
   CollectionReference<Map<String, dynamic>> get _bookings =>
       (_firestore ?? FirebaseFirestore.instance).collection('booking_xe');
@@ -28,20 +31,22 @@ class FirestoreBookingXeService implements BookingXeService {
 
   @override
   Future<BookingXe> guiYeuCau(BookingXe booking) async {
-    final map = booking.toMap()
-      ..remove('id')
-      ..['status'] = 'pending';
-    final ref = await _bookings.add({
-      ...map,
-      // Firestore lưu thời điểm dạng timestamp thay vì chuỗi ISO.
-      'scheduledAt': Timestamp.fromDate(booking.scheduledAt),
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    return BookingXe.fromMap({...map, 'id': ref.id});
+    final post = await _quota.createPost(
+      'booking_xe',
+      (uid) => booking.toMap()
+        ..remove('id')
+        ..['userId'] = uid
+        ..['status'] = 'pending'
+        // Firestore lưu thời điểm dạng timestamp thay vì chuỗi ISO.
+        ..['scheduledAt'] = Timestamp.fromDate(booking.scheduledAt),
+    );
+    return _fromMap({...post.data, 'id': post.id});
   }
 
-  static BookingXe _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = {...?doc.data(), 'id': doc.id};
+  static BookingXe _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) =>
+      _fromMap({...?doc.data(), 'id': doc.id});
+
+  static BookingXe _fromMap(Map<String, dynamic> data) {
     final scheduledAt = data['scheduledAt'];
     if (scheduledAt is Timestamp) {
       data['scheduledAt'] = scheduledAt.toDate().toUtc().toIso8601String();

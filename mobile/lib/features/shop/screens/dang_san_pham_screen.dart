@@ -60,7 +60,7 @@ class _DangSanPhamScreenState extends State<DangSanPhamScreen> {
     final stock = int.parse(_stockController.text);
     final product = Product(
       id: '',
-      shopId: '', // Gán id gian hàng khi có đăng nhập Firebase Auth.
+      shopId: '', // Service gán uid người đăng.
       name: _nameController.text.trim(),
       images: _images,
       price: int.parse(_priceController.text),

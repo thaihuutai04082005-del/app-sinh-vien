@@ -78,7 +78,7 @@ class _DatXeScreenState extends State<DatXeScreen> {
 
     final booking = BookingXe(
       id: '',
-      userId: '', // Gán uid khi có đăng nhập Firebase Auth.
+      userId: '', // Service gán uid người gửi.
       driverId: '', // Gán khi sinh viên chọn tài xế.
       fromAddress: _fromController.text.trim(),
       toAddress: _toController.text.trim(),

@@ -16,8 +16,8 @@ class VideoUploadField extends StatefulWidget {
     super.key,
   });
 
-  /// Giới hạn của Workers KV (25 MiB mỗi giá trị).
-  static const maxBytes = 25 * 1024 * 1024;
+  /// Khớp `storage.rules` (video tối đa 15 MB, khoảng 30 giây).
+  static const maxBytes = 15 * 1024 * 1024;
 
   final ImageStorageService storage;
   final String folder;
@@ -59,7 +59,7 @@ class _VideoUploadFieldState extends State<VideoUploadField> {
       setState(() {
         _status = _Status.failed;
         _error =
-            'Video ${_formatSize(size)} vượt quá 25 MB. Hãy quay ngắn hơn (khoảng 30–60 giây).';
+            'Video ${_formatSize(size)} vượt quá 15 MB. Hãy quay ngắn hơn (khoảng 30 giây).';
       });
       _notify();
       return;
@@ -134,7 +134,7 @@ class _VideoUploadFieldState extends State<VideoUploadField> {
           OutlinedButton.icon(
             onPressed: _pick,
             icon: const Icon(Icons.video_call_outlined),
-            label: const Text('Thêm video (tối đa 25 MB)'),
+            label: const Text('Thêm video (tối đa 15 MB)'),
           )
         else
           DecoratedBox(

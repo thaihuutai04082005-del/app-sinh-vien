@@ -1,17 +1,30 @@
 rules_version = '2';
 
-// Ai cũng xem được; chỉ được upload file mới (không ghi đè, không xóa),
-// ảnh tối đa 5 MB, video tối đa 25 MB, vào đúng thư mục của module.
+// Ai cũng xem được. Upload phải có tài khoản, vào thư mục của chính mình,
+// tên file `{ngày}_{số thứ tự}` lấy từ bộ đếm quota/{uid} trong Firestore
+// (tối đa 30 file/ngày), không ghi đè, không xóa. Ảnh ≤ 5 MB, video ≤ 15 MB.
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{folder}/{fileName} {
+    function isReservedName(uid, fileName) {
+      let parts = fileName.split('[_.]');
+      let quota = firestore.get(/databases/(default)/documents/quota/$(uid)).data;
+      return fileName.matches('[0-9]+_[0-9]+[.][a-z0-9]+')
+        && int(parts[0]) == quota.day
+        && int(parts[1]) >= 1
+        && int(parts[1]) <= quota.uploads;
+    }
+
+    match /{folder}/{uid}/{fileName} {
       allow read: if folder in ['products', 'booking_xe'];
       allow create: if folder in ['products', 'booking_xe']
+        && request.auth != null
+        && request.auth.uid == uid
         && resource == null
         && ((request.resource.contentType.matches('image/.*')
              && request.resource.size <= 5 * 1024 * 1024)
           || (request.resource.contentType.matches('video/.*')
-             && request.resource.size <= 25 * 1024 * 1024));
+             && request.resource.size <= 15 * 1024 * 1024))
+        && isReservedName(uid, fileName);
     }
   }
 }

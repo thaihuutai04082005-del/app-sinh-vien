@@ -1,11 +1,31 @@
 rules_version = '2';
 
-// Chưa có đăng nhập (task 1.3): ai cũng đọc và tạo mới được, không ai sửa/xóa.
-// Khi có Firebase Auth, thêm điều kiện request.auth != null và kiểm tra ownerId.
+// Ai cũng đọc được. Muốn đăng phải có tài khoản (app tự đăng nhập ẩn danh),
+// mỗi tài khoản tối đa 10 tin và 30 ảnh/video mỗi ngày (đếm trong quota/{uid}).
+// Không ai sửa/xóa tin qua app. Số liệu khớp mobile/lib/core/services/daily_quota.dart.
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isNewDoc(fields) {
-      return request.resource.data.keys().hasOnly(fields)
+    function today() {
+      return int(math.floor(request.time.toMillis() / 86400000));
+    }
+
+    function quotaPath() {
+      return /databases/$(database)/documents/quota/$(request.auth.uid);
+    }
+
+    function postsBefore() {
+      return exists(quotaPath()) && get(quotaPath()).data.day == today()
+        ? get(quotaPath()).data.posts : 0;
+    }
+
+    // Tin mới phải đi kèm lượt tăng bộ đếm trong cùng transaction, và id tin
+    // gắn với số thứ tự đó nên 1 lượt đếm chỉ tạo được đúng 1 tin.
+    function isCountedPost(id, ownerField) {
+      let posts = getAfter(quotaPath()).data.posts;
+      return request.auth != null
+        && request.resource.data[ownerField] == request.auth.uid
+        && posts == postsBefore() + 1
+        && id == request.auth.uid + '_' + string(today()) + '_' + string(posts)
         && request.resource.data.createdAt == request.time;
     }
 
@@ -13,10 +33,28 @@ service cloud.firestore {
       return value is list && value.size() <= max;
     }
 
+    match /quota/{uid} {
+      function before(field) {
+        return resource == null || resource.data.day != today() ? 0 : resource.data[field];
+      }
+
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['day', 'posts', 'uploads'])
+        && request.resource.data.day == today()
+        && ((request.resource.data.posts == before('posts') + 1
+             && request.resource.data.posts <= 10
+             && request.resource.data.uploads == before('uploads'))
+          || (request.resource.data.uploads == before('uploads') + 1
+             && request.resource.data.uploads <= 30
+             && request.resource.data.posts == before('posts')));
+    }
+
     match /products/{id} {
       allow read: if true;
-      allow create: if isNewDoc(['shopId', 'name', 'images', 'price', 'sizes',
-                                 'stock', 'category', 'status', 'videos', 'createdAt'])
+      allow create: if isCountedPost(id, 'shopId')
+        && request.resource.data.keys().hasOnly(['shopId', 'name', 'images', 'price', 'sizes',
+                                                 'stock', 'category', 'status', 'videos', 'createdAt'])
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 200
@@ -32,9 +70,10 @@ service cloud.firestore {
 
     match /booking_xe/{id} {
       allow read: if true;
-      allow create: if isNewDoc(['userId', 'driverId', 'fromAddress', 'toAddress',
-                                 'itemPhotos', 'quotedPrice', 'scheduledAt', 'status',
-                                 'videos', 'createdAt'])
+      allow create: if isCountedPost(id, 'userId')
+        && request.resource.data.keys().hasOnly(['userId', 'driverId', 'fromAddress', 'toAddress',
+                                                 'itemPhotos', 'quotedPrice', 'scheduledAt', 'status',
+                                                 'videos', 'createdAt'])
         && request.resource.data.fromAddress is string
         && request.resource.data.fromAddress.size() > 0
         && request.resource.data.toAddress is string

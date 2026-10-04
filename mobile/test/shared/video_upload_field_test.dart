@@ -60,7 +60,7 @@ void main() {
     expect(urls, isEmpty);
   });
 
-  testWidgets('từ chối video quá 25 MB mà không gửi lên máy chủ', (
+  testWidgets('từ chối video quá 15 MB mà không gửi lên máy chủ', (
     tester,
   ) async {
     final storage = _RecordingStorage();
@@ -75,6 +75,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(storage.calls, 0);
-    expect(find.textContaining('vượt quá 25 MB'), findsOneWidget);
+    expect(find.textContaining('vượt quá 15 MB'), findsOneWidget);
   });
 }

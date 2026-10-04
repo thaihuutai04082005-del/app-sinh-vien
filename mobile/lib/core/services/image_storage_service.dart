@@ -1,7 +1,8 @@
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:firebase_storage/firebase_storage.dart';
+
+import 'daily_quota.dart';
 
 /// Nơi lưu ảnh. Giao diện chỉ phụ thuộc vào interface này nên có thể đổi
 /// nơi lưu mà không phải sửa màn hình nào.
@@ -26,10 +27,11 @@ class ImageUploadException implements Exception {
 /// Upload lên Firebase Storage, chỉ lưu URL trả về vào Firestore (mục 7.4.5).
 /// Giới hạn dung lượng và loại file được kiểm tra lại trong `storage.rules`.
 class FirebaseImageStorageService implements ImageStorageService {
-  FirebaseImageStorageService({this._storage});
+  FirebaseImageStorageService({this._storage, DailyQuota? quota})
+    : _quota = quota ?? DailyQuota();
 
   static const maxImageBytes = 5 * 1024 * 1024;
-  static const maxVideoBytes = 25 * 1024 * 1024;
+  static const maxVideoBytes = 15 * 1024 * 1024;
 
   static const _contentTypes = {
     'jpg': 'image/jpeg',
@@ -43,6 +45,7 @@ class FirebaseImageStorageService implements ImageStorageService {
   };
 
   final FirebaseStorage? _storage;
+  final DailyQuota _quota;
 
   @override
   Future<String> upload({
@@ -60,13 +63,19 @@ class FirebaseImageStorageService implements ImageStorageService {
     final isVideo = contentType.startsWith('video/');
     if (bytes.length > (isVideo ? maxVideoBytes : maxImageBytes)) {
       throw ImageUploadException(
-        isVideo ? 'Video vượt quá 25 MB.' : 'Ảnh vượt quá 5 MB.',
+        isVideo ? 'Video vượt quá 15 MB.' : 'Ảnh vượt quá 5 MB.',
       );
     }
 
-    final ref = (_storage ?? FirebaseStorage.instance).ref(
-      '$folder/${_randomId()}.$ext',
-    );
+    final String path;
+    try {
+      path = await _quota.reserveUploadPath(folder, ext);
+    } on QuotaException catch (e) {
+      throw ImageUploadException(e.message);
+    } on FirebaseException catch (e) {
+      throw ImageUploadException('Upload thất bại (${e.code}).');
+    }
+    final ref = (_storage ?? FirebaseStorage.instance).ref(path);
     try {
       await ref.putData(bytes, SettableMetadata(contentType: contentType));
       return await ref.getDownloadURL();
@@ -75,11 +84,4 @@ class FirebaseImageStorageService implements ImageStorageService {
     }
   }
 
-  static String _randomId() {
-    final random = Random.secure();
-    return List.generate(
-      20,
-      (_) => random.nextInt(36).toRadixString(36),
-    ).join();
-  }
 }
