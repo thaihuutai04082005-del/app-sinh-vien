@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/async_state_view.dart';
-import '../../home/home_screen.dart';
+import '../../home/main_shell.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
@@ -25,7 +25,7 @@ class AuthGate extends StatelessWidget {
           return const Scaffold(body: ErrorView());
         }
         if (snapshot.data == null) return LoginScreen(authService: authService);
-        return const HomeScreen();
+        return const MainShell();
       },
     );
   }

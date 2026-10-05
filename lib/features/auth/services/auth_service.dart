@@ -46,6 +46,25 @@ class AuthService {
 
   Future<void> signOut() => _auth.signOut();
 
+  /// Đọc hồ sơ từ collection `users`; null nếu chưa có document.
+  Future<AppUser?> loadProfile(String uid) async {
+    final doc = await _db.collection(Collections.users).doc(uid).get();
+    final data = doc.data();
+    return data == null ? null : AppUser.fromMap(data);
+  }
+
+  Future<void> updateProfile({
+    required String uid,
+    required String name,
+    required String phone,
+  }) async {
+    await _db.collection(Collections.users).doc(uid).set(
+      {'uid': uid, 'name': name.trim(), 'phone': phone.trim()},
+      SetOptions(merge: true),
+    );
+    await _auth.currentUser?.updateDisplayName(name.trim());
+  }
+
   /// Đổi mã lỗi Firebase thành câu tiếng Việt cho người dùng.
   static String messageFor(Object error) {
     if (error is FirebaseAuthException) {
