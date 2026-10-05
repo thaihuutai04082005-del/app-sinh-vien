@@ -365,6 +365,7 @@ tro/
   location: geopoint,
   address: string,
   status: string,         // "available" | "rented" | "hidden"
+  roomType: string,       // "o_rieng" | "o_ghep" | "studio" — dùng cho bộ lọc loại phòng
   createdAt: timestamp
 }
 ```
@@ -418,7 +419,9 @@ tro/
   quotedPrice: number,            // giá báo trọn gói trước khi khách xác nhận đặt
   scheduledAt: timestamp,
   status: string,             // "pending" | "confirmed" | "in_progress" | "done"
-  driverLastLocation: geopoint  // vị trí tài xế cập nhật realtime khi đang thực hiện
+  driverLastLocation: geopoint, // vị trí tài xế cập nhật realtime khi đang thực hiện
+  videos: array<string>,        // URL video đồ đạc (tối đa 1)
+  createdAt: timestamp
 }
 ```
 
@@ -433,6 +436,7 @@ tro/
   sizes: array<string>,
   stock: number,
   category: string,
+  videos: array<string>,       // URL video giới thiệu (tối đa 1)
   status: string               // "active" | "out_of_stock"
 }
 ```

@@ -34,4 +34,5 @@ class Collections {
   static const String checkins = 'checkins';
   static const String chats = 'chats';
   static const String messages = 'messages';
+  static const String quota = 'quota';
 }

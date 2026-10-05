@@ -6,14 +6,17 @@
 Mỗi người nhận 1 module, chỉ làm trong thư mục của module đó:
 `lib/features/<module>/{models,screens,widgets,services}`
 
-| Module | Thư mục |
-|---|---|
-| Đăng nhập/tài khoản | `features/auth` |
-| Tìm trọ | `features/tro` |
-| Quán ăn | `features/quan_an` |
-| Xe dọn trọ | `features/xe_don_tro` |
-| Shop quần áo | `features/shop` |
-| Vui chơi | `features/vui_choi` |
+| Module (mục trong file mô hình) | Thư mục | Phụ trách |
+|---|---|---|
+| Khung chung: đăng nhập, hồ sơ, điều hướng, `core/`, `shared/` | `features/auth`, `features/home` | Thái Hữu Tài |
+| 3.1 Tìm trọ | `features/tro` | Thái Hữu Tài |
+| 3.2 Quán ăn | `features/quan_an` | Thái Hữu Tài |
+| 3.3 Xe dọn trọ | `features/xe_don_tro` | Trần Chí Hướng |
+| 3.4 Shop quần áo giá rẻ | `features/shop` | Trần Chí Hướng |
+| 3.5 Điểm vui chơi | `features/vui_choi` | *Chưa phân công* |
+
+Upload ảnh/video, hạn mức chống spam và `firestore.rules` / `storage.rules` do Trần Chí Hướng viết;
+khung chung và quy tắc `users`, `phong_tro` do Thái Hữu Tài. Cần sửa phần của người khác thì báo người đó trước.
 
 ## Quy tắc để không xung đột
 1. **Không import code của module khác.** Cần dùng chung thì đưa vào `lib/shared/` hoặc `lib/core/` (và báo cả nhóm).
@@ -26,3 +29,14 @@ Mỗi người nhận 1 module, chỉ làm trong thư mục của module đó:
 ## Git
 - Nhánh chung: `develop`. Mỗi người làm nhánh riêng `feature/<module>-<tên>`, tạo Pull Request vào `develop`.
 - Trước khi tạo PR chạy: `flutter analyze && flutter test`.
+
+## Firebase
+- Project dùng chung: `app-sinh-vien-b6ea4` (thêm thành viên ở Project settings → Users and permissions).
+- Quy tắc bảo mật nằm ở `firestore.rules` và `storage.rules`. Sau khi sửa phải deploy thì mới có hiệu lực:
+  ```
+  firebase login
+  firebase deploy --only firestore:rules --project app-sinh-vien-b6ea4
+  ```
+- Collection mới phải được khai báo trong `firestore.rules`, nếu không sẽ bị chặn (mặc định từ chối tất cả).
+- Upload ảnh/video dùng Firebase Storage; bật Storage yêu cầu gói Blaze của Firebase.
+- Hạn mức chống spam: tối đa 10 tin và 30 ảnh/video mỗi ngày cho mỗi tài khoản (`DailyQuota`, khớp với rules).
