@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "949173303262",
+    "project_id": "app-sinh-vien-b6ea4",
+    "storage_bucket": "app-sinh-vien-b6ea4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:949173303262:android:c3a064a5a60523b2940f4f",
+        "android_client_info": {
+          "package_name": "vn.edu.appsinhvien.app_sinh_vien"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCV15WumXtOlYdgjOrXJHTs8sgNdAZvDt4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
