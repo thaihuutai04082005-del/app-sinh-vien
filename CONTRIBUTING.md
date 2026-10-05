@@ -6,14 +6,17 @@
 Mỗi người nhận 1 module, chỉ làm trong thư mục của module đó:
 `lib/features/<module>/{models,screens,widgets,services}`
 
-| Module | Thư mục |
-|---|---|
-| Đăng nhập/tài khoản | `features/auth` |
-| Tìm trọ | `features/tro` |
-| Quán ăn | `features/quan_an` |
-| Xe dọn trọ | `features/xe_don_tro` (code gốc: Tran Chi Huong) |
-| Shop quần áo | `features/shop` (code gốc: Tran Chi Huong) |
-| Vui chơi | `features/vui_choi` |
+| Module (mục trong file mô hình) | Thư mục | Phụ trách |
+|---|---|---|
+| Khung chung: đăng nhập, hồ sơ, điều hướng, `core/`, `shared/` | `features/auth`, `features/home` | Thái Hữu Tài |
+| 3.1 Tìm trọ | `features/tro` | Thái Hữu Tài |
+| 3.2 Quán ăn | `features/quan_an` | Thái Hữu Tài |
+| 3.3 Xe dọn trọ | `features/xe_don_tro` | Tran Chi Huong |
+| 3.4 Shop quần áo giá rẻ | `features/shop` | Tran Chi Huong |
+| 3.5 Điểm vui chơi | `features/vui_choi` | *Chưa phân công* |
+
+Upload ảnh/video, hạn mức chống spam và `firestore.rules` / `storage.rules` do Tran Chi Huong viết;
+khung chung và quy tắc `users`, `phong_tro` do Thái Hữu Tài. Cần sửa phần của người khác thì báo người đó trước.
 
 ## Quy tắc để không xung đột
 1. **Không import code của module khác.** Cần dùng chung thì đưa vào `lib/shared/` hoặc `lib/core/` (và báo cả nhóm).
