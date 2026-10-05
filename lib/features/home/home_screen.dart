@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/image_storage_service.dart';
 import '../shop/screens/shop_screen.dart';
+import '../tro/screens/phong_tro_list_screen.dart';
+import '../tro/services/phong_tro_service.dart';
 import '../shop/services/product_service.dart';
 import '../xe_don_tro/screens/xe_don_tro_screen.dart';
 import '../xe_don_tro/services/booking_xe_service.dart';
@@ -14,7 +16,11 @@ class HomeScreen extends StatelessWidget {
 
   /// Module chưa làm thì để `builder` là null -> báo "sắp ra mắt".
   static final _modules = <(String, IconData, Widget Function()?)>[
-    ('Tìm trọ', Icons.home_work_outlined, null),
+    (
+      'Tìm trọ',
+      Icons.home_work_outlined,
+      () => PhongTroListScreen(service: FirestorePhongTroService()),
+    ),
     ('Quán ăn', Icons.restaurant_outlined, null),
     (
       'Xe dọn trọ',

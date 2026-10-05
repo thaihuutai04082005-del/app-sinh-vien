@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/screens/auth_gate.dart';
+import 'features/home/main_shell.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -21,7 +22,7 @@ class AppSinhVien extends StatelessWidget {
       title: AppStrings.appName,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      home: const AuthGate(),
+      home: AuthGate(signedInBuilder: (_) => const MainShell()),
     );
   }
 }

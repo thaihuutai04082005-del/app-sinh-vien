@@ -117,6 +117,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Phòng trọ: ai cũng xem được. Chưa cho ghi qua app; chức năng đăng tin (task 2.5)
+    // sẽ bổ sung quy tắc tạo/sửa riêng cho chủ trọ.
+    match /phong_tro/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

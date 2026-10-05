@@ -2,14 +2,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/async_state_view.dart';
-import '../../home/main_shell.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
-/// Đã đăng nhập -> trang chủ, chưa -> màn hình đăng nhập.
+/// Đã đăng nhập -> [signedInBuilder], chưa -> màn hình đăng nhập.
+/// Màn hình sau đăng nhập do main.dart truyền vào để module auth không phải
+/// import module khác.
 class AuthGate extends StatelessWidget {
-  const AuthGate({super.key, this.authService});
+  const AuthGate({required this.signedInBuilder, super.key, this.authService});
 
+  final WidgetBuilder signedInBuilder;
   final AuthService? authService;
 
   @override
@@ -25,7 +27,7 @@ class AuthGate extends StatelessWidget {
           return const Scaffold(body: ErrorView());
         }
         if (snapshot.data == null) return LoginScreen(authService: authService);
-        return const MainShell();
+        return signedInBuilder(context);
       },
     );
   }
