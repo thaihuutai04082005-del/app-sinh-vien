@@ -1,1 +1,43 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"app-sinh-vien-b6ea4","appId":"1:949173303262:android:c3a064a5a60523b2940f4f","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"app-sinh-vien-b6ea4","configurations":{"android":"1:949173303262:android:c3a064a5a60523b2940f4f","ios":"1:949173303262:ios:11b556e0db9365b6940f4f","web":"1:949173303262:web:ae4e4166804055de940f4f"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "app-sinh-vien-b6ea4",
+          "appId": "1:949173303262:android:c3a064a5a60523b2940f4f",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "app-sinh-vien-b6ea4",
+          "configurations": {
+            "android": "1:949173303262:android:c3a064a5a60523b2940f4f",
+            "ios": "1:949173303262:ios:11b556e0db9365b6940f4f",
+            "web": "1:949173303262:web:ae4e4166804055de940f4f"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

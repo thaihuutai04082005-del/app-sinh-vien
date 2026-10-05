@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Cần truy cập thư viện ảnh để bạn chọn ảnh/video đăng tin.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Cần dùng camera để bạn chụp ảnh đăng tin.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Cần dùng micro để bạn quay video đăng tin.</string>
 </dict>
 </plist>

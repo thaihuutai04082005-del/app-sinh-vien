@@ -58,10 +58,22 @@ class AuthService {
     required String name,
     required String phone,
   }) async {
-    await _db.collection(Collections.users).doc(uid).set(
-      {'uid': uid, 'name': name.trim(), 'phone': phone.trim()},
-      SetOptions(merge: true),
-    );
+    final ref = _db.collection(Collections.users).doc(uid);
+    try {
+      // Rules chỉ cho sửa name và phone.
+      await ref.update({'name': name.trim(), 'phone': phone.trim()});
+    } on FirebaseException catch (e) {
+      if (e.code != 'not-found') rethrow;
+      // Chưa có hồ sơ (vd. tài khoản tạo từ trước) -> tạo mới.
+      await ref.set(
+        AppUser(
+          uid: uid,
+          name: name.trim(),
+          email: _auth.currentUser?.email ?? '',
+          phone: phone.trim(),
+        ).toMap(),
+      );
+    }
     await _auth.currentUser?.updateDisplayName(name.trim());
   }
 

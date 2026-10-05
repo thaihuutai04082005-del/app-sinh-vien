@@ -1,19 +1,49 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/services/image_storage_service.dart';
+import '../shop/screens/shop_screen.dart';
+import '../shop/services/product_service.dart';
+import '../xe_don_tro/screens/xe_don_tro_screen.dart';
+import '../xe_don_tro/services/booking_xe_service.dart';
 
 /// Trang chủ: lưới các module (giống ngành hàng Shopee).
 /// Mỗi module sẽ được nhúng vào đây khi hoàn thành.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  static const _modules = <(String, IconData)>[
-    ('Tìm trọ', Icons.home_work_outlined),
-    ('Quán ăn', Icons.restaurant_outlined),
-    ('Xe dọn trọ', Icons.local_shipping_outlined),
-    ('Shop đồ rẻ', Icons.checkroom_outlined),
-    ('Vui chơi', Icons.celebration_outlined),
+  /// Module chưa làm thì để `builder` là null -> báo "sắp ra mắt".
+  static final _modules = <(String, IconData, Widget Function()?)>[
+    ('Tìm trọ', Icons.home_work_outlined, null),
+    ('Quán ăn', Icons.restaurant_outlined, null),
+    (
+      'Xe dọn trọ',
+      Icons.local_shipping_outlined,
+      () => XeDonTroScreen(
+            service: FirestoreBookingXeService(),
+            storage: FirebaseImageStorageService(),
+          ),
+    ),
+    (
+      'Shop đồ rẻ',
+      Icons.checkroom_outlined,
+      () => ShopScreen(
+            service: FirestoreProductService(),
+            storage: FirebaseImageStorageService(),
+          ),
+    ),
+    ('Vui chơi', Icons.celebration_outlined, null),
   ];
+
+  void _open(BuildContext context, String label, Widget Function()? builder) {
+    if (builder == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$label sẽ sớm ra mắt')),
+      );
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => builder()));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +55,10 @@ class HomeScreen extends StatelessWidget {
         mainAxisSpacing: AppSizes.padding,
         crossAxisSpacing: AppSizes.padding,
         children: [
-          for (final (label, icon) in _modules)
+          for (final (label, icon, builder) in _modules)
             Card(
               child: InkWell(
-                onTap: () {},
+                onTap: () => _open(context, label, builder),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

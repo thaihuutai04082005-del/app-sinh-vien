@@ -11,8 +11,8 @@ Mỗi người nhận 1 module, chỉ làm trong thư mục của module đó:
 | Đăng nhập/tài khoản | `features/auth` |
 | Tìm trọ | `features/tro` |
 | Quán ăn | `features/quan_an` |
-| Xe dọn trọ | `features/xe_don_tro` |
-| Shop quần áo | `features/shop` |
+| Xe dọn trọ | `features/xe_don_tro` (code gốc: Tran Chi Huong) |
+| Shop quần áo | `features/shop` (code gốc: Tran Chi Huong) |
 | Vui chơi | `features/vui_choi` |
 
 ## Quy tắc để không xung đột
@@ -26,3 +26,14 @@ Mỗi người nhận 1 module, chỉ làm trong thư mục của module đó:
 ## Git
 - Nhánh chung: `develop`. Mỗi người làm nhánh riêng `feature/<module>-<tên>`, tạo Pull Request vào `develop`.
 - Trước khi tạo PR chạy: `flutter analyze && flutter test`.
+
+## Firebase
+- Project dùng chung: `app-sinh-vien-b6ea4` (thêm thành viên ở Project settings → Users and permissions).
+- Quy tắc bảo mật nằm ở `firestore.rules` và `storage.rules`. Sau khi sửa phải deploy thì mới có hiệu lực:
+  ```
+  firebase login
+  firebase deploy --only firestore:rules --project app-sinh-vien-b6ea4
+  ```
+- Collection mới phải được khai báo trong `firestore.rules`, nếu không sẽ bị chặn (mặc định từ chối tất cả).
+- Upload ảnh/video dùng Firebase Storage; bật Storage yêu cầu gói Blaze của Firebase.
+- Hạn mức chống spam: tối đa 10 tin và 30 ảnh/video mỗi ngày cho mỗi tài khoản (`DailyQuota`, khớp với rules).

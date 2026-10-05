@@ -15,4 +15,11 @@ void main() {
       expect(find.text(name), findsOneWidget);
     }
   });
+
+  testWidgets('Module chưa làm báo "sẽ sớm ra mắt"', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.tap(find.text('Quán ăn'));
+    await tester.pump();
+    expect(find.text('Quán ăn sẽ sớm ra mắt'), findsOneWidget);
+  });
 }
