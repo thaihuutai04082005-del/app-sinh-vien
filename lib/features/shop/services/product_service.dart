@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/constants/app_constants.dart';
 
 import '../../../core/services/daily_quota.dart';
 import '../models/product.dart';
@@ -19,7 +20,7 @@ class FirestoreProductService implements ProductService {
   final DailyQuota _quota;
 
   CollectionReference<Map<String, dynamic>> get _products =>
-      (_firestore ?? FirebaseFirestore.instance).collection('products');
+      (_firestore ?? FirebaseFirestore.instance).collection(Collections.products);
 
   @override
   Future<List<Product>> getDanhSachSanPham() async {

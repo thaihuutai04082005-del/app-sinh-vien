@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/constants/app_constants.dart';
 
 import '../../../core/services/daily_quota.dart';
 import '../models/booking_xe.dart';
@@ -18,7 +19,7 @@ class FirestoreBookingXeService implements BookingXeService {
   final DailyQuota _quota;
 
   CollectionReference<Map<String, dynamic>> get _bookings =>
-      (_firestore ?? FirebaseFirestore.instance).collection('booking_xe');
+      (_firestore ?? FirebaseFirestore.instance).collection(Collections.bookingXe);
 
   @override
   Future<List<BookingXe>> getDanhSachYeuCau() async {

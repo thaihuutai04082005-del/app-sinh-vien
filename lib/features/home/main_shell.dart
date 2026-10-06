@@ -18,7 +18,8 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
 
-  late final List<Widget> _pages = widget.pages ??
+  late final List<Widget> _pages =
+      widget.pages ??
       const [
         HomeScreen(),
         _ComingSoon(title: 'Tin nhắn'),
@@ -35,21 +36,25 @@ class _MainShellState extends State<MainShell> {
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
           NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Trang chủ'),
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Trang chủ',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.chat_bubble_outline),
-              selectedIcon: Icon(Icons.chat_bubble),
-              label: 'Tin nhắn'),
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Tin nhắn',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.favorite_border),
-              selectedIcon: Icon(Icons.favorite),
-              label: 'Yêu thích'),
+            icon: Icon(Icons.favorite_border),
+            selectedIcon: Icon(Icons.favorite),
+            label: 'Yêu thích',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Cá nhân'),
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Cá nhân',
+          ),
         ],
       ),
     );
@@ -63,7 +68,7 @@ class _ComingSoon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(title)),
-        body: const EmptyView(message: 'Tính năng sẽ sớm ra mắt'),
-      );
+    appBar: AppBar(title: Text(title)),
+    body: const EmptyView(message: 'Tính năng sẽ sớm ra mắt'),
+  );
 }

@@ -12,9 +12,9 @@ enum RoomType {
   final String label;
 
   static RoomType fromValue(String? value) => RoomType.values.firstWhere(
-        (type) => type.value == value,
-        orElse: () => RoomType.oRieng,
-      );
+    (type) => type.value == value,
+    orElse: () => RoomType.oRieng,
+  );
 }
 
 /// Phòng trọ — collection `phong_tro` (mục 7.3). Tên field khớp bảng trong tài liệu.
@@ -64,26 +64,27 @@ class PhongTro {
   final DateTime? createdAt;
 
   factory PhongTro.fromMap(String id, Map<String, dynamic> map) => PhongTro(
-        id: id,
-        ownerId: map['ownerId'] as String? ?? '',
-        ownerVerified: map['ownerVerified'] as bool? ?? false,
-        title: map['title'] as String? ?? '',
-        images: List<String>.from(map['images'] as List? ?? const []),
-        price: map['price'] as num? ?? 0,
-        electricPrice: map['electricPrice'] as num? ?? 0,
-        waterPrice: map['waterPrice'] as num? ?? 0,
-        area: (map['area'] as num? ?? 0).toDouble(),
-        maxPeople: (map['maxPeople'] as num? ?? 1).toInt(),
-        amenities: List<String>.from(map['amenities'] as List? ?? const []),
-        lifestylePrefs:
-            List<String>.from(map['lifestylePrefs'] as List? ?? const []),
-        depositEnabled: map['depositEnabled'] as bool? ?? false,
-        location: map['location'] as GeoPoint?,
-        address: map['address'] as String? ?? '',
-        status: map['status'] as String? ?? 'available',
-        roomType: RoomType.fromValue(map['roomType'] as String?),
-        createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-      );
+    id: id,
+    ownerId: map['ownerId'] as String? ?? '',
+    ownerVerified: map['ownerVerified'] as bool? ?? false,
+    title: map['title'] as String? ?? '',
+    images: List<String>.from(map['images'] as List? ?? const []),
+    price: map['price'] as num? ?? 0,
+    electricPrice: map['electricPrice'] as num? ?? 0,
+    waterPrice: map['waterPrice'] as num? ?? 0,
+    area: (map['area'] as num? ?? 0).toDouble(),
+    maxPeople: (map['maxPeople'] as num? ?? 1).toInt(),
+    amenities: List<String>.from(map['amenities'] as List? ?? const []),
+    lifestylePrefs: List<String>.from(
+      map['lifestylePrefs'] as List? ?? const [],
+    ),
+    depositEnabled: map['depositEnabled'] as bool? ?? false,
+    location: map['location'] as GeoPoint?,
+    address: map['address'] as String? ?? '',
+    status: map['status'] as String? ?? 'available',
+    roomType: RoomType.fromValue(map['roomType'] as String?),
+    createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+  );
 }
 
 /// Tên hiển thị của mã tiện ích / phong cách sống lưu trong Firestore.

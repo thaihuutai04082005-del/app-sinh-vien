@@ -7,8 +7,8 @@ import '../../../shared/models/app_user.dart';
 /// Gọi Firebase Auth + Firestore cho đăng ký / đăng nhập.
 class AuthService {
   AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
-      : _authOverride = auth,
-        _firestoreOverride = firestore;
+    : _authOverride = auth,
+      _firestoreOverride = firestore;
 
   final FirebaseAuth? _authOverride;
   final FirebaseFirestore? _firestoreOverride;
@@ -31,9 +31,15 @@ class AuthService {
     );
     final user = cred.user!;
     await user.updateDisplayName(name.trim());
-    await _db.collection(Collections.users).doc(user.uid).set(
-          AppUser(uid: user.uid, name: name.trim(), email: email.trim())
-              .toMap(),
+    await _db
+        .collection(Collections.users)
+        .doc(user.uid)
+        .set(
+          AppUser(
+            uid: user.uid,
+            name: name.trim(),
+            email: email.trim(),
+          ).toMap(),
         );
   }
 

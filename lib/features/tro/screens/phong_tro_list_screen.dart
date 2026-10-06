@@ -30,12 +30,14 @@ class _PhongTroListScreenState extends State<PhongTroListScreen> {
 
   List<PhongTro> _filter(List<PhongTro> list) {
     final query = _query.trim().toLowerCase();
-    return list.where((p) {
-      final searchable = '${p.title} ${p.address}'.toLowerCase();
-      return (query.isEmpty || searchable.contains(query)) &&
-          (_roomType == null || p.roomType == _roomType) &&
-          (!_verifiedOnly || p.ownerVerified);
-    }).toList(growable: false);
+    return list
+        .where((p) {
+          final searchable = '${p.title} ${p.address}'.toLowerCase();
+          return (query.isEmpty || searchable.contains(query)) &&
+              (_roomType == null || p.roomType == _roomType) &&
+              (!_verifiedOnly || p.ownerVerified);
+        })
+        .toList(growable: false);
   }
 
   @override

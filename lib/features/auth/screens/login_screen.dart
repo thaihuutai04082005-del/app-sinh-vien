@@ -65,8 +65,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 8),
-                    const Text('Đăng nhập để tiếp tục',
-                        textAlign: TextAlign.center),
+                    const Text(
+                      'Đăng nhập để tiếp tục',
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _emailCtrl,
@@ -96,9 +98,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
-                      Text(_error!,
-                          style: TextStyle(
-                              color: Theme.of(context).colorScheme.error)),
+                      Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                     ],
                     const SizedBox(height: 24),
                     FilledButton(
@@ -115,11 +120,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _loading
                           ? null
                           : () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => RegisterScreen(
-                                      authService: widget.authService),
+                              MaterialPageRoute<void>(
+                                builder: (_) => RegisterScreen(
+                                  authService: widget.authService,
                                 ),
                               ),
+                            ),
                       child: const Text('Chưa có tài khoản? Đăng ký'),
                     ),
                   ],

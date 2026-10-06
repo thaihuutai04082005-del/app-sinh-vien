@@ -1,17 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Điểm vui chơi — collection `vui_choi` (mục 7.3). Tên field khớp bảng trong tài liệu.
 class VuiChoiModel {
-  final String id;
-  final String name;
-  final List<String> images;
-  final String category; // "cafe", "rap_phim", "cong_vien"...
-  final GeoPoint location;
-  final String address;
-  final String openHour;
-  final String closeHour;
-  final double ticketPrice;
-
-  VuiChoiModel({
+  const VuiChoiModel({
     required this.id,
     required this.name,
     required this.images,
@@ -23,31 +14,46 @@ class VuiChoiModel {
     required this.ticketPrice,
   });
 
-  factory VuiChoiModel.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    return VuiChoiModel(
-      id: doc.id,
-      name: data['name'] ?? '',
-      images: List<String>.from(data['images'] ?? []),
-      category: data['category'] ?? '',
-      location: data['location'] ?? const GeoPoint(0, 0),
-      address: data['address'] ?? '',
-      openHour: data['openHour'] ?? '',
-      closeHour: data['closeHour'] ?? '',
-      ticketPrice: (data['ticketPrice'] ?? 0).toDouble(),
-    );
-  }
+  final String id;
+  final String name;
+  final List<String> images;
 
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'images': images,
-      'category': category,
-      'location': location,
-      'address': address,
-      'openHour': openHour,
-      'closeHour': closeHour,
-      'ticketPrice': ticketPrice,
-    };
-  }
+  /// "cafe" | "rap_phim" | "cong_vien"...
+  final String category;
+  final GeoPoint location;
+  final String address;
+  final String openHour;
+  final String closeHour;
+  final double ticketPrice;
+
+  factory VuiChoiModel.fromMap(String id, Map<String, dynamic> map) =>
+      VuiChoiModel(
+        id: id,
+        name: map['name'] as String? ?? '',
+        images: List<String>.from(map['images'] as List? ?? const []),
+        category: map['category'] as String? ?? '',
+        location: map['location'] as GeoPoint? ?? const GeoPoint(0, 0),
+        address: map['address'] as String? ?? '',
+        openHour: map['openHour'] as String? ?? '',
+        closeHour: map['closeHour'] as String? ?? '',
+        ticketPrice: (map['ticketPrice'] as num? ?? 0).toDouble(),
+      );
+
+  Map<String, dynamic> toMap() => {
+    'name': name,
+    'images': images,
+    'category': category,
+    'location': location,
+    'address': address,
+    'openHour': openHour,
+    'closeHour': closeHour,
+    'ticketPrice': ticketPrice,
+  };
 }
+
+/// Tên hiển thị của mã loại hình lưu trong Firestore.
+const vuiChoiCategoryLabels = {
+  'cafe': 'Cà phê',
+  'rap_phim': 'Rạp phim',
+  'cong_vien': 'Công viên',
+};

@@ -86,7 +86,9 @@ class PhongTroDetailScreen extends StatelessWidget {
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Chat với chủ trọ sẽ sớm ra mắt')),
+                  const SnackBar(
+                    content: Text('Chat với chủ trọ sẽ sớm ra mắt'),
+                  ),
                 ),
                 icon: const Icon(Icons.chat_bubble_outline),
                 label: const Text('Liên hệ chủ trọ'),
@@ -107,12 +109,15 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text(label), Text(value, style: const TextStyle(fontWeight: FontWeight.w700))],
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
+      ],
+    ),
+  );
 }
 
 class _Chips extends StatelessWidget {
@@ -122,8 +127,8 @@ class _Chips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [for (final label in labels) Chip(label: Text(label))],
-      );
+    spacing: 8,
+    runSpacing: 8,
+    children: [for (final label in labels) Chip(label: Text(label))],
+  );
 }
