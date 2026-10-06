@@ -13,7 +13,7 @@ Mỗi người nhận 1 module, chỉ làm trong thư mục của module đó:
 | 3.2 Quán ăn | `features/quan_an` | Thái Hữu Tài |
 | 3.3 Xe dọn trọ | `features/xe_don_tro` | Trần Chí Hướng |
 | 3.4 Shop quần áo giá rẻ | `features/shop` | Trần Chí Hướng |
-| 3.5 Điểm vui chơi | `features/vui_choi` | *Chưa phân công* |
+| 3.5 Điểm vui chơi | `features/vui_choi` | Thành (PThanhSinhVieen) |
 
 Upload ảnh/video, hạn mức chống spam và `firestore.rules` / `storage.rules` do Trần Chí Hướng viết;
 khung chung và quy tắc `users`, `phong_tro` do Thái Hữu Tài. Cần sửa phần của người khác thì báo người đó trước.

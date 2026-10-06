@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../constants/app_constants.dart';
 
 class QuotaException implements Exception {
   const QuotaException(this.message);
@@ -71,7 +72,7 @@ class DailyQuota {
     String? collection,
     Map<String, dynamic>? data,
   }) {
-    final quotaRef = _db.collection('quota').doc(uid);
+    final quotaRef = _db.collection(Collections.quota).doc(uid);
     return _db.runTransaction((tx) async {
       final snapshot = await tx.get(quotaRef);
       final current = snapshot.data();

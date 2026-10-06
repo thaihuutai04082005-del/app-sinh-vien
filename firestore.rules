@@ -124,6 +124,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Điểm vui chơi: ai cũng xem được. Chưa cho ghi qua app.
+    match /vui_choi/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

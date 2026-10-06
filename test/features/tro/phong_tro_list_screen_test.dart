@@ -40,11 +40,18 @@ const _ghep = PhongTro(
   roomType: RoomType.oGhep,
 );
 
-Widget _app(PhongTroService s) => MaterialApp(home: PhongTroListScreen(service: s));
+Widget _app(PhongTroService s) =>
+    MaterialApp(home: PhongTroListScreen(service: s));
 
 void main() {
   testWidgets('hiển thị danh sách lấy từ service', (tester) async {
-    await tester.pumpWidget(_app(_FakeService([<PhongTro>[_studio, _ghep]])));
+    await tester.pumpWidget(
+      _app(
+        _FakeService([
+          <PhongTro>[_studio, _ghep],
+        ]),
+      ),
+    );
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     await tester.pumpAndSettle();
     expect(find.text('2 chỗ ở phù hợp'), findsOneWidget);
@@ -53,7 +60,13 @@ void main() {
   });
 
   testWidgets('tìm theo khu vực', (tester) async {
-    await tester.pumpWidget(_app(_FakeService([<PhongTro>[_studio, _ghep]])));
+    await tester.pumpWidget(
+      _app(
+        _FakeService([
+          <PhongTro>[_studio, _ghep],
+        ]),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Cao Lãnh');
     await tester.pump();
@@ -62,7 +75,13 @@ void main() {
   });
 
   testWidgets('lọc theo loại phòng và theo xác thực', (tester) async {
-    await tester.pumpWidget(_app(_FakeService([<PhongTro>[_studio, _ghep]])));
+    await tester.pumpWidget(
+      _app(
+        _FakeService([
+          <PhongTro>[_studio, _ghep],
+        ]),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, 'Ở ghép'));
     await tester.pump();
@@ -83,10 +102,16 @@ void main() {
   });
 
   testWidgets('báo lỗi và tải lại được', (tester) async {
-    final service = _FakeService([Exception('mạng'), <PhongTro>[_studio]]);
+    final service = _FakeService([
+      Exception('mạng'),
+      <PhongTro>[_studio],
+    ]);
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
-    expect(find.text('Chưa tải được danh sách phòng. Vui lòng thử lại.'), findsOneWidget);
+    expect(
+      find.text('Chưa tải được danh sách phòng. Vui lòng thử lại.'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Thử lại'));
     await tester.pumpAndSettle();
     expect(find.text('Studio gần Đại học Đồng Tháp'), findsOneWidget);
@@ -94,7 +119,13 @@ void main() {
   });
 
   testWidgets('bấm vào phòng mở màn chi tiết đủ thông tin', (tester) async {
-    await tester.pumpWidget(_app(_FakeService([<PhongTro>[_studio]])));
+    await tester.pumpWidget(
+      _app(
+        _FakeService([
+          <PhongTro>[_studio],
+        ]),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Studio gần Đại học Đồng Tháp'));
     await tester.pumpAndSettle();

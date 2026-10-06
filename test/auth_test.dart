@@ -23,14 +23,18 @@ void main() {
 
   test('messageFor dịch mã lỗi Firebase sang tiếng Việt', () {
     expect(
-      AuthService.messageFor(FirebaseAuthException(code: 'email-already-in-use')),
+      AuthService.messageFor(
+        FirebaseAuthException(code: 'email-already-in-use'),
+      ),
       'Email này đã được đăng ký',
     );
     expect(
       AuthService.messageFor(FirebaseAuthException(code: 'invalid-credential')),
       'Email hoặc mật khẩu không đúng',
     );
-    expect(AuthService.messageFor(Exception('x')),
-        'Đã có lỗi xảy ra, vui lòng thử lại');
+    expect(
+      AuthService.messageFor(Exception('x')),
+      'Đã có lỗi xảy ra, vui lòng thử lại',
+    );
   });
 }

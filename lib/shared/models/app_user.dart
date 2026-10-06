@@ -25,25 +25,25 @@ class AppUser {
   final DateTime? createdAt;
 
   factory AppUser.fromMap(Map<String, dynamic> map) => AppUser(
-        uid: map['uid'] as String? ?? '',
-        name: map['name'] as String? ?? '',
-        email: map['email'] as String? ?? '',
-        phone: map['phone'] as String? ?? '',
-        avatarUrl: map['avatarUrl'] as String? ?? '',
-        role: map['role'] as String? ?? 'student',
-        schoolEmail: map['schoolEmail'] as String? ?? '',
-        createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-      );
+    uid: map['uid'] as String? ?? '',
+    name: map['name'] as String? ?? '',
+    email: map['email'] as String? ?? '',
+    phone: map['phone'] as String? ?? '',
+    avatarUrl: map['avatarUrl'] as String? ?? '',
+    role: map['role'] as String? ?? 'student',
+    schoolEmail: map['schoolEmail'] as String? ?? '',
+    createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+  );
 
   /// Khi tạo mới, `createdAt` do server đặt để thống nhất giờ.
   Map<String, dynamic> toMap() => {
-        'uid': uid,
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'avatarUrl': avatarUrl,
-        'role': role,
-        'schoolEmail': schoolEmail,
-        'createdAt': FieldValue.serverTimestamp(),
-      };
+    'uid': uid,
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'avatarUrl': avatarUrl,
+    'role': role,
+    'schoolEmail': schoolEmail,
+    'createdAt': FieldValue.serverTimestamp(),
+  };
 }

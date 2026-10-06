@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/image_storage_service.dart';
 import '../shop/screens/shop_screen.dart';
+import '../shop/services/product_service.dart';
 import '../tro/screens/phong_tro_list_screen.dart';
 import '../tro/services/phong_tro_service.dart';
-import '../shop/services/product_service.dart';
+import '../vui_choi/screens/vui_choi_list_screen.dart';
+import '../vui_choi/services/vui_choi_service.dart';
 import '../xe_don_tro/screens/xe_don_tro_screen.dart';
 import '../xe_don_tro/services/booking_xe_service.dart';
-import 'package:app_sinh_vien/features/vui_choi/screens/vui_choi_list_screen.dart';
 
 /// Trang chủ: lưới các module (giống ngành hàng Shopee).
 /// Mỗi module sẽ được nhúng vào đây khi hoàn thành.
@@ -27,29 +28,33 @@ class HomeScreen extends StatelessWidget {
       'Xe dọn trọ',
       Icons.local_shipping_outlined,
       () => XeDonTroScreen(
-            service: FirestoreBookingXeService(),
-            storage: FirebaseImageStorageService(),
-          ),
+        service: FirestoreBookingXeService(),
+        storage: FirebaseImageStorageService(),
+      ),
     ),
     (
       'Shop đồ rẻ',
       Icons.checkroom_outlined,
       () => ShopScreen(
-            service: FirestoreProductService(),
-            storage: FirebaseImageStorageService(),
-          ),
+        service: FirestoreProductService(),
+        storage: FirebaseImageStorageService(),
+      ),
     ),
-    ('Vui chơi', Icons.celebration_outlined, () => const VuiChoiListScreen()),
+    (
+      'Vui chơi',
+      Icons.celebration_outlined,
+      () => VuiChoiListScreen(service: FirestoreVuiChoiService()),
+    ),
   ];
 
   void _open(BuildContext context, String label, Widget Function()? builder) {
     if (builder == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$label sẽ sớm ra mắt')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$label sẽ sớm ra mắt')));
       return;
     }
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => builder()));
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => builder()));
   }
 
   @override

@@ -11,7 +11,7 @@ abstract interface class PhongTroService {
 
 class FirestorePhongTroService implements PhongTroService {
   FirestorePhongTroService([FirebaseFirestore? firestore])
-      : _firestore = firestore;
+    : _firestore = firestore;
 
   final FirebaseFirestore? _firestore;
 
@@ -26,9 +26,10 @@ class FirestorePhongTroService implements PhongTroService {
       for (final doc in snapshot.docs) PhongTro.fromMap(doc.id, doc.data()),
     ];
     // Sắp xếp phía app để không phải tạo composite index.
-    list.sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(
-          a.createdAt ?? DateTime(0),
-        ));
+    list.sort(
+      (a, b) =>
+          (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)),
+    );
     return list;
   }
 }

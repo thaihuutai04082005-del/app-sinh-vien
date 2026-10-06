@@ -28,12 +28,19 @@ class _FakeAuthService extends AuthService {
   Future<AppUser?> loadProfile(String uid) async {
     if (failLoad) throw Exception('lỗi');
     return const AppUser(
-        uid: 'u1', name: 'Thái Hữu Tài', email: 'a@b.com', phone: '0123456789');
+      uid: 'u1',
+      name: 'Thái Hữu Tài',
+      email: 'a@b.com',
+      phone: '0123456789',
+    );
   }
 
   @override
-  Future<void> updateProfile(
-      {required String uid, required String name, required String phone}) async {
+  Future<void> updateProfile({
+    required String uid,
+    required String name,
+    required String phone,
+  }) async {
     saved = {'name': name, 'phone': phone};
   }
 
@@ -44,7 +51,8 @@ class _FakeAuthService extends AuthService {
 void main() {
   testWidgets('Hiển thị hồ sơ đã tải', (tester) async {
     await tester.pumpWidget(
-        MaterialApp(home: ProfileScreen(authService: _FakeAuthService())));
+      MaterialApp(home: ProfileScreen(authService: _FakeAuthService())),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Thái Hữu Tài'), findsOneWidget);
     expect(find.text('0123456789'), findsOneWidget);
@@ -53,7 +61,9 @@ void main() {
 
   testWidgets('Số điện thoại sai bị từ chối, đúng thì lưu', (tester) async {
     final auth = _FakeAuthService();
-    await tester.pumpWidget(MaterialApp(home: ProfileScreen(authService: auth)));
+    await tester.pumpWidget(
+      MaterialApp(home: ProfileScreen(authService: auth)),
+    );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).last, '12ab');
@@ -70,7 +80,9 @@ void main() {
 
   testWidgets('Nút đăng xuất gọi signOut', (tester) async {
     final auth = _FakeAuthService();
-    await tester.pumpWidget(MaterialApp(home: ProfileScreen(authService: auth)));
+    await tester.pumpWidget(
+      MaterialApp(home: ProfileScreen(authService: auth)),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Đăng xuất'));
     await tester.pump();
@@ -79,7 +91,9 @@ void main() {
 
   testWidgets('Báo lỗi và cho thử lại khi tải thất bại', (tester) async {
     final auth = _FakeAuthService()..failLoad = true;
-    await tester.pumpWidget(MaterialApp(home: ProfileScreen(authService: auth)));
+    await tester.pumpWidget(
+      MaterialApp(home: ProfileScreen(authService: auth)),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Không tải được hồ sơ'), findsOneWidget);
     expect(find.text('Thử lại'), findsOneWidget);

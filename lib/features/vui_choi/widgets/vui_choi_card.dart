@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/image_gallery.dart';
 import '../models/vui_choi_model.dart';
 
 class VuiChoiCard extends StatelessWidget {
+  const VuiChoiCard({required this.item, required this.onTap, super.key});
+
   final VuiChoiModel item;
   final VoidCallback onTap;
 
-  const VuiChoiCard({
-    Key? key,
-    required this.item,
-    required this.onTap,
-  }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -21,15 +21,16 @@ class VuiChoiCard extends StatelessWidget {
         contentPadding: const EdgeInsets.all(8),
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: item.images.isNotEmpty
-              ? Image.network(
-                  item.images.first,
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.place, size: 40),
-                )
-              : const Icon(Icons.place, size: 40),
+          child: SizedBox(
+            width: 70,
+            height: 70,
+            child: item.images.isEmpty
+                ? ColoredBox(
+                    color: colors.primaryContainer,
+                    child: const Icon(Icons.place, size: 40),
+                  )
+                : NetworkPhoto(item.images.first),
+          ),
         ),
         title: Text(
           item.name,
@@ -40,15 +41,12 @@ class VuiChoiCard extends StatelessWidget {
           children: [
             const SizedBox(height: 4),
             Text(item.address, maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text('⏰ ${item.openHour} - ${item.closeHour}'),
+            Text('Mở cửa: ${item.openHour} - ${item.closeHour}'),
           ],
         ),
         trailing: Text(
-          item.ticketPrice == 0 ? 'Miễn phí' : '${item.ticketPrice.toInt()}đ',
-          style: const TextStyle(
-            color: Colors.green,
-            fontWeight: FontWeight.bold,
-          ),
+          item.ticketPrice == 0 ? 'Miễn phí' : formatPrice(item.ticketPrice),
+          style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold),
         ),
       ),
     );

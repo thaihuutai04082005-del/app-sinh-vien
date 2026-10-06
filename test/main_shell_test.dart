@@ -4,14 +4,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('Thanh điều hướng chuyển được giữa các mục', (tester) async {
-    await tester.pumpWidget(const MaterialApp(
-      home: MainShell(pages: [
-        Text('Trang A'),
-        Text('Trang B'),
-        Text('Trang C'),
-        Text('Trang D'),
-      ]),
-    ));
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: MainShell(
+          pages: [
+            Text('Trang A'),
+            Text('Trang B'),
+            Text('Trang C'),
+            Text('Trang D'),
+          ],
+        ),
+      ),
+    );
     expect(find.text('Trang chủ'), findsOneWidget);
     expect(find.text('Tin nhắn'), findsOneWidget);
     expect(find.text('Yêu thích'), findsOneWidget);
