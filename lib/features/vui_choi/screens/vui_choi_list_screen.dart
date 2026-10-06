@@ -28,6 +28,20 @@ class _VuiChoiListScreenState extends State<VuiChoiListScreen> {
       appBar: AppBar(
         title: const Text('Điểm Vui Chơi'),
         centerTitle: true,
+        //nút
+actions: [
+  IconButton(
+    icon: const Icon(Icons.add),
+    onPressed: () async {
+      await _service.taoDuLieuMau();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã thêm 2 địa điểm!')),
+        );
+      }
+    },
+  ),
+],
       ),
       body: Column(
         children: [
