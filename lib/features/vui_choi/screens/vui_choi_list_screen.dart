@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/services/image_storage_service.dart';
+import '../../../shared/widgets/image_upload_field.dart';
 import '../models/vui_choi_model.dart';
 import '../services/vui_choi_service.dart';
 import '../widgets/vui_choi_card.dart';
+import 'dang_dia_diem_vui_choi_screen.dart';
 import 'vui_choi_detail_screen.dart';
 
 /// Danh sách điểm vui chơi, lọc theo loại hình.
 /// Có đủ 3 trạng thái: đang tải, rỗng, lỗi (mục 7.4).
 class VuiChoiListScreen extends StatefulWidget {
-  const VuiChoiListScreen({required this.service, super.key});
+  const VuiChoiListScreen({
+    required this.service,
+    required this.storage,
+    this.pickImages,
+    super.key,
+  });
 
   final VuiChoiService service;
+  final ImageStorageService storage;
+  final ImagePickerCallback? pickImages;
 
   @override
   State<VuiChoiListScreen> createState() => _VuiChoiListScreenState();
@@ -38,10 +48,36 @@ class _VuiChoiListScreenState extends State<VuiChoiListScreen> {
     });
   }
 
+  Future<void> _openDangDiaDiem() async {
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DangDiaDiemVuiChoiScreen(
+          service: widget.service,
+          storage: widget.storage,
+          pickImages: widget.pickImages,
+        ),
+      ),
+    );
+    if (created == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đăng địa điểm thành công.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Điểm vui chơi')),
+      appBar: AppBar(
+        title: const Text('Điểm vui chơi'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_location_alt_outlined),
+            tooltip: 'Đăng địa điểm mới',
+            onPressed: _openDangDiaDiem,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           SizedBox(

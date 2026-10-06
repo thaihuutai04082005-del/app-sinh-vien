@@ -1,5 +1,6 @@
-import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:app_sinh_vien/core/services/image_storage_service.dart';
 import 'package:app_sinh_vien/features/vui_choi/models/vui_choi_model.dart';
 import 'package:app_sinh_vien/features/vui_choi/screens/vui_choi_list_screen.dart';
 import 'package:app_sinh_vien/features/vui_choi/services/vui_choi_service.dart';
@@ -7,12 +8,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _FakeStorage implements ImageStorageService {
+  @override
+  Future<String> upload({
+    required Uint8List bytes,
+    required String fileName,
+    required String folder,
+  }) async => 'https://cdn.test/$folder/$fileName';
+}
+
 class _FakeService implements VuiChoiService {
   _FakeService(this._streams);
 
   /// Mỗi lần gọi lấy một stream theo thứ tự; hết thì dùng stream cuối.
   final List<Stream<List<VuiChoiModel>>> _streams;
   final List<String?> categories = [];
+
+  @override
+  Future<VuiChoiModel> dangVuiChoi(VuiChoiModel item) async => item;
 
   @override
   Stream<List<VuiChoiModel>> getDanhSachVuiChoi({String? category}) {
@@ -47,8 +60,9 @@ const _rap = VuiChoiModel(
   ticketPrice: 90000,
 );
 
-Widget _app(VuiChoiService s) =>
-    MaterialApp(home: VuiChoiListScreen(service: s));
+Widget _app(VuiChoiService s) => MaterialApp(
+  home: VuiChoiListScreen(service: s, storage: _FakeStorage()),
+);
 
 void main() {
   testWidgets('hiển thị danh sách lấy từ service, giá vé định dạng đúng', (
@@ -126,6 +140,16 @@ void main() {
     expect(find.text('Giá vé: 90.000đ'), findsOneWidget);
   });
 
+  testWidgets('nút dấu cộng mở form đăng địa điểm', (tester) async {
+    await tester.pumpWidget(
+      _app(_FakeService([Stream.value(<VuiChoiModel>[])])),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Đăng địa điểm mới'));
+    await tester.pumpAndSettle();
+    expect(find.text('Đăng địa điểm vui chơi'), findsOneWidget);
+  });
+
   test('VuiChoiModel.fromMap đọc đúng tên field theo bảng 7.3', () {
     final m = VuiChoiModel.fromMap('x', {
       'name': 'N',
@@ -136,7 +160,9 @@ void main() {
       'openHour': '06:00',
       'closeHour': '21:00',
       'ticketPrice': 15000,
+      'ownerId': 'u1',
     });
+    expect(m.ownerId, 'u1');
     expect(m.category, 'cong_vien');
     expect(m.ticketPrice, 15000.0);
     expect(m.location.longitude, 2);

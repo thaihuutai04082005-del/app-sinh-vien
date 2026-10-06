@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+
 import '../constants/app_constants.dart';
 
 class QuotaException implements Exception {
@@ -22,19 +24,39 @@ class DailyQuota {
 
   final FirebaseFirestore? _firestore;
   final FirebaseAuth? _auth;
+  Future<String>? _anonymousSignIn;
 
   FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
   static int get today =>
       DateTime.now().millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
 
-  /// Chưa có màn đăng nhập (task 1.3) nên dùng tài khoản ẩn danh để có uid.
+  /// uid của tài khoản đang đăng nhập. Nếu chưa đăng nhập thì dùng tài khoản ẩn
+  /// danh; nhiều lượt upload chạy song song chỉ đăng nhập ẩn danh một lần.
+  /// Không lưu lại uid của tài khoản đã đăng nhập nên đổi tài khoản vẫn đúng.
   Future<String> _uid() async {
     final auth = _auth ?? FirebaseAuth.instance;
-    final user = auth.currentUser ?? (await auth.signInAnonymously()).user;
+    final current = auth.currentUser;
+    if (current != null) return current.uid;
+
+    final pending = _anonymousSignIn ??= _signInAnonymously(auth);
+    try {
+      return await pending;
+    } catch (_) {
+      _anonymousSignIn = null;
+      rethrow;
+    }
+  }
+
+  Future<String> _signInAnonymously(FirebaseAuth auth) async {
+    final user = (await auth.signInAnonymously()).user;
     if (user == null) throw const QuotaException('Không đăng nhập được.');
     return user.uid;
   }
+
+  /// Chỉ để test: uid mà các lượt đăng/upload sẽ dùng.
+  @visibleForTesting
+  Future<String> uidForTest() => _uid();
 
   /// Giữ chỗ 1 lượt upload; trả về đường dẫn file `{folder}/{uid}/{day}_{n}.{ext}`.
   Future<String> reserveUploadPath(String folder, String ext) async {
@@ -103,5 +125,6 @@ class DailyQuota {
   }
 
   /// 1 lượt đếm chỉ ứng với đúng 1 id tin (firestore.rules kiểm tra lại).
-  static String _postId(String uid, int day, int index) => '${uid}_${day}_$index';
+  static String _postId(String uid, int day, int index) =>
+      '${uid}_${day}_$index';
 }

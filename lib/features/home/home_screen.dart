@@ -43,7 +43,10 @@ class HomeScreen extends StatelessWidget {
     (
       'Vui chơi',
       Icons.celebration_outlined,
-      () => VuiChoiListScreen(service: FirestoreVuiChoiService()),
+      () => VuiChoiListScreen(
+        service: FirestoreVuiChoiService(),
+        storage: FirebaseImageStorageService(),
+      ),
     ),
   ];
 
