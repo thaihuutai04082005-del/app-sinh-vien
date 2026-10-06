@@ -1,0 +1,25 @@
+import 'package:app_sinh_vien/features/home/home_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('Trang chủ hiển thị đủ 5 module', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    for (final name in [
+      'Tìm trọ',
+      'Quán ăn',
+      'Xe dọn trọ',
+      'Shop đồ rẻ',
+      'Vui chơi',
+    ]) {
+      expect(find.text(name), findsOneWidget);
+    }
+  });
+
+  testWidgets('Module chưa làm báo "sẽ sớm ra mắt"', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.tap(find.text('Quán ăn'));
+    await tester.pump();
+    expect(find.text('Quán ăn sẽ sớm ra mắt'), findsOneWidget);
+  });
+}
