@@ -29,6 +29,21 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
     }
 
+    // Link ảnh do người dùng dán: https, không khoảng trắng, tối đa 2000 ký tự.
+    function isHttpsUrl(u) {
+      return u is string && u.size() <= 2000 && u.matches('^https://[^ ]+$');
+    }
+
+    // Kiểm tra từng link (danh sách tối đa 6 phần tử; giới hạn số lượng do isUrlList).
+    function allHttpsUrls(l) {
+      return (l.size() < 1 || isHttpsUrl(l[0]))
+        && (l.size() < 2 || isHttpsUrl(l[1]))
+        && (l.size() < 3 || isHttpsUrl(l[2]))
+        && (l.size() < 4 || isHttpsUrl(l[3]))
+        && (l.size() < 5 || isHttpsUrl(l[4]))
+        && (l.size() < 6 || isHttpsUrl(l[5]));
+    }
+
     function isUrlList(value, max) {
       return value is list && value.size() <= max;
     }
@@ -147,7 +162,8 @@ service cloud.firestore {
         && request.resource.data.ticketPrice is number
         && request.resource.data.ticketPrice >= 0
         && isUrlList(request.resource.data.images, 6)
-        && request.resource.data.images.size() > 0;
+        && request.resource.data.images.size() > 0
+        && allHttpsUrls(request.resource.data.images);
       allow update, delete: if false;
     }
 

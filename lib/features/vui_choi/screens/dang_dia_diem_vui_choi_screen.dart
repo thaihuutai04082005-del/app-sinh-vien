@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../../core/services/daily_quota.dart';
 import '../../../core/services/image_storage_service.dart';
 import '../../../shared/widgets/image_upload_field.dart';
+import '../../../shared/widgets/image_url_field.dart';
 import '../models/vui_choi_model.dart';
 import '../services/vui_choi_service.dart';
 
@@ -36,8 +37,13 @@ class _DangDiaDiemVuiChoiScreenState extends State<DangDiaDiemVuiChoiScreen> {
   final _longitudeController = TextEditingController();
 
   String? _category;
-  List<String> _images = const [];
-  bool _isUploading = false;
+  // Ảnh có 2 nguồn: dán link (không cần Storage) hoặc upload từ máy.
+  bool _useLink = true;
+  List<String> _linkImages = const [];
+  List<String> _uploadedImages = const [];
+  List<String> get _images => _useLink ? _linkImages : _uploadedImages;
+  bool _uploading = false;
+  bool get _isUploading => !_useLink && _uploading;
   bool _showImageError = false;
   bool _isSaving = false;
 
@@ -109,18 +115,57 @@ class _DangDiaDiemVuiChoiScreenState extends State<DangDiaDiemVuiChoiScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            ImageUploadField(
-              storage: widget.storage,
-              folder: 'vui_choi',
-              label: 'Ảnh địa điểm',
-              helperText: 'Ảnh đầu tiên sẽ làm ảnh bìa. Nên chụp rõ không gian và biển tên.',
-              maxImages: 6,
-              pickImages: widget.pickImages,
-              onChanged: (urls, isUploading) => setState(() {
-                _images = urls;
-                _isUploading = isUploading;
-                if (urls.isNotEmpty) _showImageError = false;
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: true,
+                  icon: Icon(Icons.link),
+                  label: Text('Dán link ảnh'),
+                ),
+                ButtonSegment(
+                  value: false,
+                  icon: Icon(Icons.upload_outlined),
+                  label: Text('Tải ảnh từ máy'),
+                ),
+              ],
+              selected: {_useLink},
+              onSelectionChanged: (value) => setState(() {
+                _useLink = value.first;
+                if (_images.isNotEmpty) _showImageError = false;
               }),
+            ),
+            const SizedBox(height: 14),
+            // Cả hai ô luôn nằm trong cây (chỉ ẩn/hiện) để không mất ảnh đã chọn
+            // khi đổi chế độ và không làm các ô nhập bên dưới bị dựng lại.
+            Visibility(
+              visible: _useLink,
+              maintainState: true,
+              child: ImageUrlField(
+                label: 'Ảnh địa điểm',
+                helperText: 'Dán link ảnh có sẵn trên mạng (https://). Ảnh đầu tiên làm ảnh bìa.',
+                maxImages: 6,
+                onChanged: (urls) => setState(() {
+                  _linkImages = urls;
+                  if (urls.isNotEmpty) _showImageError = false;
+                }),
+              ),
+            ),
+            Visibility(
+              visible: !_useLink,
+              maintainState: true,
+              child: ImageUploadField(
+                storage: widget.storage,
+                folder: 'vui_choi',
+                label: 'Ảnh địa điểm',
+                helperText: 'Ảnh đầu tiên sẽ làm ảnh bìa. Nên chụp rõ không gian và biển tên.',
+                maxImages: 6,
+                pickImages: widget.pickImages,
+                onChanged: (urls, isUploading) => setState(() {
+                  _uploadedImages = urls;
+                  _uploading = isUploading;
+                  if (urls.isNotEmpty) _showImageError = false;
+                }),
+              ),
             ),
             // Luôn đúng 1 phần tử ở vị trí này: nếu lúc có lúc không thì các ô nhập
             // bên dưới bị dựng lại và mất lỗi vừa hiện.
