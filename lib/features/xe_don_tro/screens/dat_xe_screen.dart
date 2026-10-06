@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/services/image_storage_service.dart';
+import '../../../shared/widgets/image_source_field.dart';
 import '../../../shared/widgets/image_upload_field.dart';
 import '../../../shared/widgets/video_upload_field.dart';
 import '../models/booking_xe.dart';
@@ -152,11 +153,12 @@ class _DatXeScreenState extends State<DatXeScreen> {
               ),
             ),
             const SizedBox(height: 22),
-            ImageUploadField(
+            ImageSourceField(
               storage: widget.storage,
               folder: 'booking_xe',
               label: 'Ảnh đồ đạc',
               helperText: 'Chụp toàn bộ đồ cần chuyển để tài xế báo giá trọn gói chính xác.',
+              startWithLink: false,
               pickImages: widget.pickImages,
               onChanged: (urls, isUploading) => setState(() {
                 _itemPhotos = urls;

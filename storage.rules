@@ -15,8 +15,8 @@ service firebase.storage {
     }
 
     match /{folder}/{uid}/{fileName} {
-      allow read: if folder in ['products', 'booking_xe', 'vui_choi'];
-      allow create: if folder in ['products', 'booking_xe', 'vui_choi']
+      allow read: if folder in ['products', 'booking_xe', 'vui_choi', 'phong_tro'];
+      allow create: if folder in ['products', 'booking_xe', 'vui_choi', 'phong_tro']
         && request.auth != null
         && request.auth.uid == uid
         && resource == null

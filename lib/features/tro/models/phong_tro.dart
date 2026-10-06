@@ -85,6 +85,26 @@ class PhongTro {
     roomType: RoomType.fromValue(map['roomType'] as String?),
     createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
   );
+
+  /// Dữ liệu ghi lên Firestore khi đăng tin. `ownerId` và `createdAt` do
+  /// `DailyQuota.createPost` gán; tin mới luôn chưa xác thực và còn trống.
+  Map<String, dynamic> toMap() => {
+    'ownerVerified': false,
+    'title': title,
+    'images': images,
+    'price': price,
+    'electricPrice': electricPrice,
+    'waterPrice': waterPrice,
+    'area': area,
+    'maxPeople': maxPeople,
+    'amenities': amenities,
+    'lifestylePrefs': lifestylePrefs,
+    'depositEnabled': depositEnabled,
+    'location': location,
+    'address': address,
+    'status': 'available',
+    'roomType': roomType.value,
+  };
 }
 
 /// Tên hiển thị của mã tiện ích / phong cách sống lưu trong Firestore.

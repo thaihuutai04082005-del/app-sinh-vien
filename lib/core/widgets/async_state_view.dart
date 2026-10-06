@@ -26,13 +26,13 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message),
-            if (onRetry != null)
-              TextButton(onPressed: onRetry, child: const Text('Thử lại')),
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(message),
+        if (onRetry != null)
+          TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+      ],
+    ),
+  );
 }
