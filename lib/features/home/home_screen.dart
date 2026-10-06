@@ -8,6 +8,7 @@ import '../tro/services/phong_tro_service.dart';
 import '../shop/services/product_service.dart';
 import '../xe_don_tro/screens/xe_don_tro_screen.dart';
 import '../xe_don_tro/services/booking_xe_service.dart';
+import 'package:app_sinh_vien/features/vui_choi/screens/vui_choi_list_screen.dart';
 
 /// Trang chủ: lưới các module (giống ngành hàng Shopee).
 /// Mỗi module sẽ được nhúng vào đây khi hoàn thành.
@@ -38,7 +39,7 @@ class HomeScreen extends StatelessWidget {
             storage: FirebaseImageStorageService(),
           ),
     ),
-    ('Vui chơi', Icons.celebration_outlined, null),
+    ('Vui chơi', Icons.celebration_outlined, () => const VuiChoiListScreen()),
   ];
 
   void _open(BuildContext context, String label, Widget Function()? builder) {
