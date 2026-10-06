@@ -21,6 +21,7 @@ class DailyQuota {
 
   final FirebaseFirestore? _firestore;
   final FirebaseAuth? _auth;
+  Future<String>? _uidRequest;
 
   FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
@@ -29,6 +30,20 @@ class DailyQuota {
 
   /// Chưa có màn đăng nhập (task 1.3) nên dùng tài khoản ẩn danh để có uid.
   Future<String> _uid() async {
+    final cachedRequest = _uidRequest;
+    if (cachedRequest != null) return cachedRequest;
+
+    final request = _loadUid();
+    _uidRequest = request;
+    try {
+      return await request;
+    } catch (_) {
+      _uidRequest = null;
+      rethrow;
+    }
+  }
+
+  Future<String> _loadUid() async {
     final auth = _auth ?? FirebaseAuth.instance;
     final user = auth.currentUser ?? (await auth.signInAnonymously()).user;
     if (user == null) throw const QuotaException('Không đăng nhập được.');
@@ -102,5 +117,6 @@ class DailyQuota {
   }
 
   /// 1 lượt đếm chỉ ứng với đúng 1 id tin (firestore.rules kiểm tra lại).
-  static String _postId(String uid, int day, int index) => '${uid}_${day}_$index';
+  static String _postId(String uid, int day, int index) =>
+      '${uid}_${day}_$index';
 }

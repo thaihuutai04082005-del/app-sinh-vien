@@ -125,13 +125,18 @@ class _DangDiaDiemVuiChoiScreenState extends State<DangDiaDiemVuiChoiScreen> {
                 if (urls.isNotEmpty) _showImageError = false;
               }),
             ),
-            if (_showImageError)
+            if (_showImageError && !_isUploading)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   'Cần ít nhất 1 ảnh địa điểm.',
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
+              ),
+            if (_isUploading)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text('Đang tải ảnh lên, vui lòng chờ...'),
               ),
             const SizedBox(height: 22),
             TextFormField(
