@@ -16,6 +16,10 @@ class NetworkPhoto extends StatelessWidget {
       url,
       fit: fit,
       filterQuality: FilterQuality.medium,
+      // Bản web: nếu trình duyệt chặn tải ảnh do nơi chứa ảnh không bật CORS
+      // (Firebase Storage chưa cấu hình, link dán từ trang khác...) thì dùng thẻ
+      // <img> của trình duyệt để vẫn hiện ảnh. Không ảnh hưởng Android/iOS.
+      webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
       loadingBuilder: (context, child, progress) => progress == null
           ? child
           : ColoredBox(
