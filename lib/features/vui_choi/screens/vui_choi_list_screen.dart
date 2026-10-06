@@ -68,15 +68,13 @@ class _VuiChoiListScreenState extends State<VuiChoiListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Điểm vui chơi'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_location_alt_outlined),
-            tooltip: 'Đăng địa điểm mới',
-            onPressed: _openDangDiaDiem,
-          ),
-        ],
+      appBar: AppBar(title: const Text('Điểm vui chơi')),
+      // Nút nổi ở góc dưới giống Shop: dễ thấy, không bị che bởi dải DEBUG.
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openDangDiaDiem,
+        tooltip: 'Đăng địa điểm mới',
+        icon: const Icon(Icons.add_location_alt_outlined),
+        label: const Text('Đăng địa điểm'),
       ),
       body: Column(
         children: [
