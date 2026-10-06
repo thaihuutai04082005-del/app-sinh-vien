@@ -203,7 +203,7 @@ Trả lời xong 3 câu này là có thể viết thành 1 mục mới trong ph�
 
 - **App di động:** Flutter (1 codebase cho Android + iOS)
 - **Backend:** Firebase (MVP nhanh: Auth, Firestore, Storage) → nâng cấp lên Node.js/PostgreSQL khi scale
-- **Bản đồ:** Google Maps Platform
+- **Bản đồ:** OpenStreetMap qua `flutter_map` (Google Maps Platform không bán cho tài khoản thanh toán tại Việt Nam); nút "Chỉ đường" mở Google Maps bằng link, không cần API key
 - **Chat:** Firebase Realtime Database hoặc dịch vụ chat có sẵn (Stream, Sendbird...)
 
 ---
@@ -216,7 +216,7 @@ Trả lời xong 3 câu này là có thể viết thành 1 mục mới trong ph�
 - [ ] 0.1. Cài Flutter SDK + kiểm tra `flutter doctor` chạy sạch (không lỗi)
 - [ ] 0.2. Cài Android Studio/VS Code + emulator để test app
 - [ ] 0.3. Tạo tài khoản Firebase, tạo project mới trên Firebase Console
-- [ ] 0.4. Tạo tài khoản Google Cloud, bật Google Maps Platform (lấy API key)
+- [ ] 0.4. Tạo tài khoản Google Cloud, không dùng Google Maps Platform vì không khả dụng tại Việt Nam, thay bằng OpenStreetMap (không cần API key)
 - [ ] 0.5. Cài Claude Code, mở thư mục project rỗng, khởi tạo project Flutter (`flutter create`)
 - [ ] 0.6. Đẩy code lên GitHub (tạo repo riêng) để lưu lịch sử, tránh mất code
 
@@ -233,7 +233,7 @@ Trả lời xong 3 câu này là có thể viết thành 1 mục mới trong ph�
 - [ ] 2.1. Thiết kế model dữ liệu "Phòng trọ" (giá, ảnh, vị trí, tiện ích...) trên Firestore
 - [ ] 2.2. Màn hình danh sách phòng trọ (dạng list/card, load dữ liệu mẫu)
 - [ ] 2.3. Màn hình chi tiết 1 phòng trọ (ảnh, mô tả, giá, tiện ích)
-- [ ] 2.4. Tích hợp Google Maps: hiển thị vị trí phòng trọ trên bản đồ
+- [ ] 2.4. Tích hợp bản đồ (OpenStreetMap): hiển thị vị trí phòng trọ trên bản đồ
 - [ ] 2.5. Chức năng đăng tin cho thuê (form nhập liệu + upload ảnh lên Firebase Storage)
 - [ ] 2.6. Bộ lọc/tìm kiếm: theo giá, khoảng cách, tiện ích
 - [ ] 2.7. Chức năng lưu tin yêu thích
