@@ -20,6 +20,7 @@ class AppSinhVien extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: AppStrings.appName,
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       home: AuthGate(signedInBuilder: (_) => const MainShell()),

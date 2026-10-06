@@ -80,9 +80,21 @@ Future<ValueNotifier<bool?>> _pump(
   return result;
 }
 
-Future<void> _fillValid(WidgetTester tester) async {
-  await tester.tap(find.text('Thêm ảnh'));
-  await tester.pumpAndSettle();
+const _link = 'https://example.com/cafe.jpg';
+
+/// Điền form hợp lệ. Mặc định thêm ảnh bằng cách dán link; [upload] = true thì
+/// chuyển sang "Tải ảnh từ máy" và chọn ảnh.
+Future<void> _fillValid(WidgetTester tester, {bool upload = false}) async {
+  if (upload) {
+    await tester.tap(find.text('Tải ảnh từ máy'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Thêm ảnh'));
+    await tester.pumpAndSettle();
+  } else {
+    await tester.enterText(find.widgetWithText(TextField, 'Link ảnh'), _link);
+    await tester.tap(find.text('Thêm'));
+    await tester.pumpAndSettle();
+  }
   await tester.enterText(
     find.widgetWithText(TextFormField, 'Tên địa điểm'),
     'Cà phê Sân Vườn',
@@ -162,10 +174,49 @@ void main() {
     expect(item.openHour, '08:00');
     expect(item.closeHour, '22:00');
     expect(item.ticketPrice, 50000);
-    expect(item.images.single, startsWith('https://cdn.test/vui_choi/'));
+    expect(item.images, [_link]);
     expect(result.value, isTrue);
     expect(find.text('Đăng địa điểm vui chơi'), findsNothing);
   });
+
+  testWidgets('tải ảnh từ máy cũng đăng được và lưu link ảnh đã upload', (
+    tester,
+  ) async {
+    final service = _RecordingService();
+    final result = await _pump(tester, service);
+    await _fillValid(tester, upload: true);
+    await tester.tap(_submit);
+    await tester.pumpAndSettle();
+
+    expect(
+      service.posted.single.images.single,
+      startsWith('https://cdn.test/vui_choi/'),
+    );
+    expect(result.value, isTrue);
+  });
+
+  testWidgets(
+    'đổi chế độ giữ ảnh đã thêm, và chỉ tính ảnh của chế độ đang chọn',
+    (tester) async {
+      final service = _RecordingService();
+      await _pump(tester, service);
+      await _fillValid(tester); // đã thêm 1 link
+
+      await tester.tap(find.text('Tải ảnh từ máy'));
+      await tester.pumpAndSettle();
+      await tester.tap(_submit); // chưa chọn ảnh nào ở chế độ này
+      await tester.pumpAndSettle();
+      expect(find.text('Cần ít nhất 1 ảnh địa điểm.'), findsOneWidget);
+      expect(service.posted, isEmpty);
+
+      await tester.tap(find.text('Dán link ảnh')); // quay lại: link vẫn còn
+      await tester.pumpAndSettle();
+      expect(find.text('Ảnh địa điểm (1/6)'), findsOneWidget);
+      await tester.tap(_submit);
+      await tester.pumpAndSettle();
+      expect(service.posted.single.images, [_link]);
+    },
+  );
 
   testWidgets('vượt hạn mức thì hiện đúng thông báo của hạn mức', (
     tester,

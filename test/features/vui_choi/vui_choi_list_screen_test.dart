@@ -145,6 +145,10 @@ void main() {
       _app(_FakeService([Stream.value(<VuiChoiModel>[])])),
     );
     await tester.pumpAndSettle();
+    expect(
+      find.text('Đăng địa điểm'),
+      findsOneWidget,
+    ); // nút nổi nhìn thấy ngay
     await tester.tap(find.byTooltip('Đăng địa điểm mới'));
     await tester.pumpAndSettle();
     expect(find.text('Đăng địa điểm vui chơi'), findsOneWidget);

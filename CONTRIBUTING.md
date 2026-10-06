@@ -38,5 +38,6 @@ khung chung và quy tắc `users`, `phong_tro` do Thái Hữu Tài. Cần sửa 
   firebase deploy --only firestore:rules --project app-sinh-vien-b6ea4
   ```
 - Collection mới phải được khai báo trong `firestore.rules`, nếu không sẽ bị chặn (mặc định từ chối tất cả).
-- Upload ảnh/video dùng Firebase Storage; bật Storage yêu cầu gói Blaze của Firebase.
+- Upload ảnh/video dùng Firebase Storage; từ 3/2/2026 bật Storage yêu cầu gói Blaze (gắn thẻ thanh toán).
+- Khi chưa bật Storage, form Đăng địa điểm vui chơi cho **dán link ảnh** (`ImageUrlField`, chỉ nhận `https://`). Module khác muốn dùng thì thêm widget này bên cạnh `ImageUploadField`. Quy tắc `firestore.rules` kiểm tra link phải là https.
 - Hạn mức chống spam: tối đa 10 tin và 30 ảnh/video mỗi ngày cho mỗi tài khoản (`DailyQuota`, khớp với rules).
