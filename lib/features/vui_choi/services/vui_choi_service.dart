@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/vui_choi_model.dart';
 
 class VuiChoiService {
@@ -20,6 +21,10 @@ class VuiChoiService {
 
   Future<void> themVuiChoi(VuiChoiModel item) {
     return _db.collection('vui_choi').doc(item.id).set(item.toMap());
+  }
+
+  String taoIdMoi() {
+    return _db.collection('vui_choi').doc().id;
   }
 
   Future<void> taoDuLieuMau() async {

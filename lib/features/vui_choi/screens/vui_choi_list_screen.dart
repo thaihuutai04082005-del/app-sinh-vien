@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/services/image_storage_service.dart';
 import '../models/vui_choi_model.dart';
 import '../services/vui_choi_service.dart';
 import '../widgets/vui_choi_card.dart';
+import 'dang_dia_diem_vui_choi_screen.dart';
 import 'vui_choi_detail_screen.dart';
 
 class VuiChoiListScreen extends StatefulWidget {
@@ -28,20 +31,40 @@ class _VuiChoiListScreenState extends State<VuiChoiListScreen> {
       appBar: AppBar(
         title: const Text('Điểm Vui Chơi'),
         centerTitle: true,
-        //nút
-actions: [
-  IconButton(
-    icon: const Icon(Icons.add),
-    onPressed: () async {
-      await _service.taoDuLieuMau();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã thêm 2 địa điểm!')),
-        );
-      }
-    },
-  ),
-],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_location_alt_outlined),
+            tooltip: 'Đăng địa điểm mới',
+            onPressed: () async {
+              final created = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DangDiaDiemVuiChoiScreen(
+                    service: _service,
+                    storage: FirebaseImageStorageService(),
+                  ),
+                ),
+              );
+              if (created == true && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Đăng địa điểm thành công.')),
+                );
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.playlist_add),
+            tooltip: 'Thêm dữ liệu mẫu',
+            onPressed: () async {
+              await _service.taoDuLieuMau();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Đã thêm 2 địa điểm mẫu!')),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -69,7 +92,7 @@ actions: [
               },
             ),
           ),
-          
+
           // Data List
           Expanded(
             child: StreamBuilder<List<VuiChoiModel>>(
@@ -79,7 +102,9 @@ actions: [
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Đã xảy ra lỗi: ${snapshot.error}'));
+                  return Center(
+                    child: Text('Đã xảy ra lỗi: ${snapshot.error}'),
+                  );
                 }
                 final list = snapshot.data ?? [];
                 if (list.isEmpty) {
@@ -95,7 +120,8 @@ actions: [
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => VuiChoiDetailScreen(item: list[index]),
+                            builder: (_) =>
+                                VuiChoiDetailScreen(item: list[index]),
                           ),
                         );
                       },

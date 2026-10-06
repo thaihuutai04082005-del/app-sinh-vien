@@ -7,7 +7,8 @@ Thiết kế và xây dựng app kết nối sinh viên với các nhà cung c�
 ## Có gì trong app
 - Đăng ký / đăng nhập (Firebase Auth), hồ sơ cá nhân, thanh điều hướng.
 - Shop quần áo và Xe dọn trọ: đăng tin, xem chi tiết, upload ảnh/video, hạn mức chống spam.
-- Tìm trọ, Quán ăn, Vui chơi: đang phát triển.
+- Vui chơi: đã có danh sách, lọc danh mục, đăng địa điểm mới kèm upload ảnh.
+- Tìm trọ, Quán ăn: đang phát triển.
 
 ## Chạy thử
 ```
