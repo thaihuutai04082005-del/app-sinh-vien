@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/services/image_storage_service.dart';
+import '../../../shared/widgets/image_source_field.dart';
 import '../../../shared/widgets/image_upload_field.dart';
 import '../../../shared/widgets/video_upload_field.dart';
 import '../models/product.dart';
@@ -92,9 +93,10 @@ class _DangSanPhamScreenState extends State<DangSanPhamScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            ImageUploadField(
+            ImageSourceField(
               storage: widget.storage,
               folder: 'products',
+              startWithLink: false,
               label: 'Ảnh sản phẩm',
               helperText:
                   'Ảnh đầu tiên là ảnh bìa. Chụp rõ chất liệu và lỗi (nếu có).',

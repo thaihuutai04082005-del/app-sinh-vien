@@ -95,5 +95,4 @@ class FirebaseImageStorageService implements ImageStorageService {
       throw ImageUploadException('Upload thất bại (${e.code}).');
     }
   }
-
 }

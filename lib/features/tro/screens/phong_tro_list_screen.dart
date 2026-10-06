@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/services/image_storage_service.dart';
+import '../../../shared/widgets/image_upload_field.dart';
 import '../models/phong_tro.dart';
 import '../services/phong_tro_service.dart';
 import '../widgets/phong_tro_card.dart';
+import 'dang_phong_tro_screen.dart';
 import 'phong_tro_detail_screen.dart';
 
 /// Danh sách phòng trọ: tìm theo tên/khu vực, lọc theo loại phòng và xác thực.
 /// Có đủ 3 trạng thái: đang tải, rỗng, lỗi (mục 7.4).
 class PhongTroListScreen extends StatefulWidget {
-  const PhongTroListScreen({required this.service, super.key});
+  const PhongTroListScreen({
+    required this.service,
+    required this.storage,
+    this.pickImages,
+    super.key,
+  });
 
   final PhongTroService service;
+  final ImageStorageService storage;
+  final ImagePickerCallback? pickImages;
 
   @override
   State<PhongTroListScreen> createState() => _PhongTroListScreenState();
@@ -26,6 +36,19 @@ class _PhongTroListScreenState extends State<PhongTroListScreen> {
     setState(() {
       _future = widget.service.getDanhSachPhongTro();
     });
+  }
+
+  Future<void> _openForm() async {
+    final posted = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DangPhongTroScreen(
+          service: widget.service,
+          storage: widget.storage,
+          pickImages: widget.pickImages,
+        ),
+      ),
+    );
+    if (posted == true) _reload();
   }
 
   List<PhongTro> _filter(List<PhongTro> list) {
@@ -44,6 +67,12 @@ class _PhongTroListScreenState extends State<PhongTroListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Tìm trọ')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openForm,
+        tooltip: 'Đăng tin cho thuê',
+        icon: const Icon(Icons.add_home_work_outlined),
+        label: const Text('Đăng tin'),
+      ),
       body: FutureBuilder<List<PhongTro>>(
         future: _future,
         builder: (context, snapshot) {

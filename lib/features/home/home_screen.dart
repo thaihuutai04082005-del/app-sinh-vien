@@ -21,7 +21,10 @@ class HomeScreen extends StatelessWidget {
     (
       'Tìm trọ',
       Icons.home_work_outlined,
-      () => PhongTroListScreen(service: FirestorePhongTroService()),
+      () => PhongTroListScreen(
+        service: FirestorePhongTroService(),
+        storage: FirebaseImageStorageService(),
+      ),
     ),
     ('Quán ăn', Icons.restaurant_outlined, null),
     (

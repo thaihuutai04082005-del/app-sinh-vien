@@ -132,11 +132,44 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Phòng trọ: ai cũng xem được. Chưa cho ghi qua app; chức năng đăng tin (task 2.5)
-    // sẽ bổ sung quy tắc tạo/sửa riêng cho chủ trọ.
+    // Phòng trọ: ai cũng xem được. Đăng tin phải đi kèm lượt đếm trong quota/{uid}
+    // (tối đa 10 tin/ngày); tin mới luôn chưa xác thực và còn trống. Không ai sửa/xóa qua app.
     match /phong_tro/{id} {
       allow read: if true;
-      allow write: if false;
+      allow create: if isCountedPost(id, 'ownerId')
+        && request.resource.data.keys().hasOnly(['ownerId', 'ownerVerified', 'title', 'images', 'price',
+                                                 'electricPrice', 'waterPrice', 'area', 'maxPeople',
+                                                 'amenities', 'lifestylePrefs', 'depositEnabled',
+                                                 'location', 'address', 'status', 'roomType', 'createdAt'])
+        && request.resource.data.ownerVerified == false
+        && request.resource.data.status == 'available'
+        && request.resource.data.roomType in ['o_rieng', 'o_ghep', 'studio']
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.address is string
+        && request.resource.data.address.size() > 0
+        && request.resource.data.address.size() <= 300
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0
+        && request.resource.data.electricPrice is number
+        && request.resource.data.electricPrice >= 0
+        && request.resource.data.waterPrice is number
+        && request.resource.data.waterPrice >= 0
+        && request.resource.data.area is number
+        && request.resource.data.area > 0
+        && request.resource.data.maxPeople is int
+        && request.resource.data.maxPeople >= 1
+        && request.resource.data.amenities is list
+        && request.resource.data.amenities.size() <= 10
+        && request.resource.data.lifestylePrefs is list
+        && request.resource.data.lifestylePrefs.size() <= 10
+        && request.resource.data.depositEnabled is bool
+        && request.resource.data.location is latlng
+        && isUrlList(request.resource.data.images, 6)
+        && request.resource.data.images.size() > 0
+        && allHttpsUrls(request.resource.data.images);
+      allow update, delete: if false;
     }
 
     // Điểm vui chơi: ai cũng xem được. Đăng mới phải đi kèm lượt đếm trong quota/{uid}
