@@ -495,7 +495,9 @@ tro/
   address: string,
   openHour: string,
   closeHour: string,
-  ticketPrice: number
+  ticketPrice: number,
+  ownerId: string,        // uid người đăng (do app gán khi đăng tin)
+  createdAt: timestamp
 }
 ```
 

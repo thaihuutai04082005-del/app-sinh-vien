@@ -12,6 +12,8 @@ class VuiChoiModel {
     required this.openHour,
     required this.closeHour,
     required this.ticketPrice,
+    this.ownerId = '',
+    this.createdAt,
   });
 
   final String id;
@@ -26,6 +28,10 @@ class VuiChoiModel {
   final String closeHour;
   final double ticketPrice;
 
+  /// uid người đăng (do DailyQuota gán khi đăng tin).
+  final String ownerId;
+  final DateTime? createdAt;
+
   factory VuiChoiModel.fromMap(String id, Map<String, dynamic> map) =>
       VuiChoiModel(
         id: id,
@@ -37,6 +43,8 @@ class VuiChoiModel {
         openHour: map['openHour'] as String? ?? '',
         closeHour: map['closeHour'] as String? ?? '',
         ticketPrice: (map['ticketPrice'] as num? ?? 0).toDouble(),
+        ownerId: map['ownerId'] as String? ?? '',
+        createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
       );
 
   Map<String, dynamic> toMap() => {

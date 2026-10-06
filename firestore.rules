@@ -124,10 +124,31 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Điểm vui chơi: ai cũng xem được. Chưa cho ghi qua app.
+    // Điểm vui chơi: ai cũng xem được. Đăng mới phải đi kèm lượt đếm trong quota/{uid}
+    // (tối đa 10 tin/ngày) giống Shop và Xe dọn trọ. Không ai sửa/xóa qua app.
     match /vui_choi/{id} {
       allow read: if true;
-      allow write: if false;
+      allow create: if isCountedPost(id, 'ownerId')
+        && request.resource.data.keys().hasOnly(['ownerId', 'name', 'images', 'category', 'location',
+                                                 'address', 'openHour', 'closeHour', 'ticketPrice',
+                                                 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 200
+        && request.resource.data.category in ['cafe', 'rap_phim', 'cong_vien']
+        && request.resource.data.address is string
+        && request.resource.data.address.size() > 0
+        && request.resource.data.address.size() <= 300
+        && request.resource.data.location is latlng
+        && request.resource.data.openHour is string
+        && request.resource.data.openHour.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$')
+        && request.resource.data.closeHour is string
+        && request.resource.data.closeHour.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$')
+        && request.resource.data.ticketPrice is number
+        && request.resource.data.ticketPrice >= 0
+        && isUrlList(request.resource.data.images, 6)
+        && request.resource.data.images.size() > 0;
+      allow update, delete: if false;
     }
 
     match /{document=**} {
