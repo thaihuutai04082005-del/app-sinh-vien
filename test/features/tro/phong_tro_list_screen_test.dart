@@ -4,6 +4,8 @@ import 'package:app_sinh_vien/core/services/image_storage_service.dart';
 import 'package:app_sinh_vien/features/tro/models/phong_tro.dart';
 import 'package:app_sinh_vien/features/tro/screens/phong_tro_list_screen.dart';
 import 'package:app_sinh_vien/features/tro/services/phong_tro_service.dart';
+import 'package:app_sinh_vien/features/tro/widgets/tro_states.dart';
+import 'package:app_sinh_vien/features/tro/widgets/tro_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -60,6 +62,8 @@ Widget _app(PhongTroService s) => MaterialApp(
 );
 
 void main() {
+  setUpAll(() => TroTheme.webFontEnabled = false);
+
   testWidgets('hiển thị danh sách lấy từ service', (tester) async {
     await tester.pumpWidget(
       _app(
@@ -68,7 +72,7 @@ void main() {
         ]),
       ),
     );
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(TroSkeletonList), findsOneWidget);
     await tester.pumpAndSettle();
     expect(find.text('2 chỗ ở phù hợp'), findsOneWidget);
     expect(find.text('Studio gần Đại học Đồng Tháp'), findsOneWidget);

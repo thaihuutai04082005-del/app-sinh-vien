@@ -5,6 +5,7 @@ import '../../core/services/image_storage_service.dart';
 import '../shop/screens/shop_screen.dart';
 import '../shop/services/product_service.dart';
 import '../tro/screens/phong_tro_list_screen.dart';
+import '../tro/screens/tro_routes.dart';
 import '../tro/services/phong_tro_service.dart';
 import '../vui_choi/screens/vui_choi_list_screen.dart';
 import '../vui_choi/services/vui_choi_service.dart';
@@ -59,8 +60,11 @@ class HomeScreen extends StatelessWidget {
           .showSnackBar(SnackBar(content: Text('$label sẽ sớm ra mắt')));
       return;
     }
-    Navigator.of(context)
-        .push(MaterialPageRoute<void>(builder: (_) => builder()));
+    // Tìm trọ có giao diện riêng (xanh biển – trắng) nên mở bằng route của module.
+    final route = label == 'Tìm trọ'
+        ? troRoute<void>((_) => builder())
+        : MaterialPageRoute<void>(builder: (_) => builder());
+    Navigator.of(context).push(route);
   }
 
   @override

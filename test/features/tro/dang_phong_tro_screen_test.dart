@@ -7,6 +7,7 @@ import 'package:app_sinh_vien/features/tro/models/phong_tro.dart';
 import 'package:app_sinh_vien/features/tro/screens/dang_phong_tro_screen.dart';
 import 'package:app_sinh_vien/features/tro/screens/phong_tro_list_screen.dart';
 import 'package:app_sinh_vien/features/tro/services/phong_tro_service.dart';
+import 'package:app_sinh_vien/features/tro/widgets/tro_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
@@ -87,6 +88,8 @@ Future<void> _fill(WidgetTester tester, {bool upload = false}) async {
 Finder get _submit => find.widgetWithText(FilledButton, 'Đăng tin');
 
 void main() {
+  setUpAll(() => TroTheme.webFontEnabled = false);
+
   testWidgets('để trống thì báo lỗi, không gọi service', (tester) async {
     final service = _Service();
     await _pump(tester, service);

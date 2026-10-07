@@ -5,8 +5,10 @@ import '../../../shared/widgets/image_upload_field.dart';
 import '../models/phong_tro.dart';
 import '../services/phong_tro_service.dart';
 import '../widgets/phong_tro_card.dart';
+import '../widgets/tro_states.dart';
 import 'dang_phong_tro_screen.dart';
 import 'phong_tro_detail_screen.dart';
+import 'tro_routes.dart';
 
 /// Danh sách phòng trọ: tìm theo tên/khu vực, lọc theo loại phòng và xác thực.
 /// Có đủ 3 trạng thái: đang tải, rỗng, lỗi (mục 7.4).
@@ -40,8 +42,8 @@ class _PhongTroListScreenState extends State<PhongTroListScreen> {
 
   Future<void> _openForm() async {
     final posted = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => DangPhongTroScreen(
+      troRoute(
+        (_) => DangPhongTroScreen(
           service: widget.service,
           storage: widget.storage,
           pickImages: widget.pickImages,
@@ -77,27 +79,12 @@ class _PhongTroListScreenState extends State<PhongTroListScreen> {
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const TroSkeletonList();
           }
           if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Chưa tải được danh sách phòng. Vui lòng thử lại.',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: _reload,
-                      child: const Text('Thử lại'),
-                    ),
-                  ],
-                ),
-              ),
+            return TroErrorState(
+              message: 'Chưa tải được danh sách phòng. Vui lòng thử lại.',
+              onRetry: _reload,
             );
           }
           final all = snapshot.data ?? const <PhongTro>[];
@@ -172,9 +159,8 @@ class _PhongTroListScreenState extends State<PhongTroListScreen> {
                       child: PhongTroCard(
                         phongTro: phongTro,
                         onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                PhongTroDetailScreen(phongTro: phongTro),
+                          troRoute<void>(
+                            (_) => PhongTroDetailScreen(phongTro: phongTro),
                           ),
                         ),
                       ),

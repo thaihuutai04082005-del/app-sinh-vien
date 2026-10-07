@@ -323,15 +323,18 @@ class _DangPhongTroScreenState extends State<DangPhongTroScreen> {
               onChanged: (v) => setState(() => _depositEnabled = v),
             ),
             const SizedBox(height: 22),
-            FilledButton.icon(
-              onPressed: _isUploading || _isSaving ? null : _submit,
-              icon: const Icon(Icons.add_home_work_outlined),
-              label: Text(
-                _isUploading
-                    ? 'Đang tải ảnh...'
-                    : _isSaving
-                    ? 'Đang đăng...'
-                    : 'Đăng tin',
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isUploading || _isSaving ? null : _submit,
+                icon: const Icon(Icons.add_home_work_outlined),
+                label: Text(
+                  _isUploading
+                      ? 'Đang tải ảnh...'
+                      : _isSaving
+                      ? 'Đang đăng...'
+                      : 'Đăng tin',
+                ),
               ),
             ),
           ],
