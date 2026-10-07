@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/detail_layout.dart';
 import '../../../shared/widgets/image_gallery.dart';
+import '../../../shared/widgets/location_map.dart';
 import '../models/phong_tro.dart';
 
 class PhongTroDetailScreen extends StatelessWidget {
@@ -79,6 +80,13 @@ class PhongTroDetailScreen extends StatelessWidget {
                 phongTro.lifestylePrefs
                     .map((code) => lifestyleLabels[code] ?? code)
                     .toList(),
+              ),
+            ],
+            if (phongTro.location != null) ...[
+              const SizedBox(height: 20),
+              LocationMap(
+                latitude: phongTro.location!.latitude,
+                longitude: phongTro.location!.longitude,
               ),
             ],
             const SizedBox(height: 24),

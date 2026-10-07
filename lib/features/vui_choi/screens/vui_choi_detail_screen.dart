@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/detail_layout.dart';
 import '../../../shared/widgets/image_gallery.dart';
+import '../../../shared/widgets/location_map.dart';
 import '../models/vui_choi_model.dart';
 
 class VuiChoiDetailScreen extends StatelessWidget {
@@ -49,6 +50,11 @@ class VuiChoiDetailScreen extends StatelessWidget {
               text:
                   'Giá vé: ${item.ticketPrice == 0 ? 'Miễn phí' : formatPrice(item.ticketPrice)}',
               bold: true,
+            ),
+            const SizedBox(height: 20),
+            LocationMap(
+              latitude: item.location.latitude,
+              longitude: item.location.longitude,
             ),
           ],
         ),
