@@ -1,6 +1,7 @@
 import 'package:app_sinh_vien/features/tro/models/dat_coc.dart';
 import 'package:app_sinh_vien/features/tro/models/nha_tro.dart';
 import 'package:app_sinh_vien/features/tro/models/phong_tro.dart';
+import 'package:app_sinh_vien/features/tro/screens/chu_tro/tao_nha_tro_screen.dart';
 import 'package:app_sinh_vien/features/tro/screens/sinh_vien/dat_coc_detail_screen.dart';
 import 'package:app_sinh_vien/features/tro/screens/sinh_vien/phong_tro_detail_screen.dart';
 import 'package:app_sinh_vien/features/tro/screens/sinh_vien/tro_sanh_screen.dart';
@@ -11,7 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fakes.dart';
 
-Widget _app(Widget w) => MaterialApp(theme: TroTheme.data(webFont: false), home: w);
+Widget _app(Widget w) =>
+    MaterialApp(theme: TroTheme.data(webFont: false), home: w);
 
 PhongTro _phong({
   String trangThai = 'available',
@@ -228,5 +230,26 @@ void main() {
       );
       expect(find.text('Không thuê nữa'), findsNothing);
     });
+  });
+
+  group('Form tạo nhà trọ', () {
+    testWidgets(
+      'bấm Tiếp khi thiếu thông tin: hiện khung lỗi ngay, không lưu nháp',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final g = TroGia(uid: 'chu');
+        await tester.pumpWidget(_app(TaoNhaTroScreen(dv: g.dv)));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Tiếp'));
+        await tester.pumpAndSettle();
+        expect(find.text('Chưa qua được bước này, cần sửa:'), findsOneWidget);
+        expect(find.textContaining('Tên nhà trọ 5–80 ký tự'), findsOneWidget);
+        expect(find.textContaining('Mô tả ít nhất 30 ký tự'), findsOneWidget);
+        expect(g.goi, isNot(contains('luuNhapNhaTro')));
+        expect(find.textContaining('Bước 1/5'), findsOneWidget);
+      },
+    );
   });
 }

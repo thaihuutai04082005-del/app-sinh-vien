@@ -307,6 +307,7 @@ class _ThemPhongScreenState extends State<ThemPhongScreen> {
       buoc: _buoc,
       tenBuoc: _tenBuoc,
       dangLuu: _dangLuu,
+      loi: _loi,
       onQuayLai: _buoc == 0
           ? null
           : () => setState(() {
@@ -385,7 +386,6 @@ class _ThemPhongScreenState extends State<ThemPhongScreen> {
               ),
             ],
           },
-          LoiBuoc(_loi),
         ],
       ),
     ),

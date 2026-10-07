@@ -26,6 +26,7 @@ class TroFormNhieuBuoc extends StatelessWidget {
     required this.onTiep,
     this.nutCuoi,
     this.dangLuu = false,
+    this.loi = const [],
     super.key,
   });
 
@@ -37,6 +38,9 @@ class TroFormNhieuBuoc extends StatelessWidget {
   final VoidCallback? onTiep;
   final Widget? nutCuoi;
   final bool dangLuu;
+
+  /// Lỗi của bước hiện tại: khung đỏ cố định ngay trên nút Tiếp (không phải cuộn mới thấy).
+  final List<String> loi;
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +87,7 @@ class TroFormNhieuBuoc extends StatelessWidget {
               ),
             ),
           ),
+          LoiBuoc(loi),
           SafeArea(
             top: false,
             child: Container(
@@ -128,14 +133,29 @@ class LoiBuoc extends StatelessWidget {
   @override
   Widget build(BuildContext context) => loi.isEmpty
       ? const SizedBox.shrink()
-      : Padding(
-          padding: const EdgeInsets.only(top: TroSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final l in loi)
-                Text('• $l', style: const TextStyle(color: TroColors.danger)),
-            ],
+      : Container(
+          width: double.infinity,
+          color: TroColors.dangerSoft,
+          padding: const EdgeInsets.symmetric(
+            horizontal: TroSpacing.screen,
+            vertical: TroSpacing.md,
+          ),
+          child: Semantics(
+            liveRegion: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Chưa qua được bước này, cần sửa:',
+                  style: TextStyle(
+                    color: TroColors.danger,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                for (final l in loi)
+                  Text('• $l', style: const TextStyle(color: TroColors.danger)),
+              ],
+            ),
           ),
         );
 }
@@ -363,6 +383,7 @@ class _TaoNhaTroScreenState extends State<TaoNhaTroScreen> {
         buoc: _buoc,
         tenBuoc: _ten,
         dangLuu: _dangLuu,
+        loi: _loi,
         onQuayLai: _buoc == 0
             ? null
             : () => setState(() {
@@ -434,7 +455,6 @@ class _TaoNhaTroScreenState extends State<TaoNhaTroScreen> {
               ],
               _ => _buoc4(),
             },
-            LoiBuoc(_loi),
           ],
         ),
       ),
