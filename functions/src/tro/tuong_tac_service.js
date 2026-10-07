@@ -46,13 +46,16 @@ async function guiTin({ uid }, { nguoiNhan, noiDung, loai = 'chu', the = null, a
   const tuKhoa = loai === 'chu' ? quet(chu) : [];
   const refTin = refChat.collection('tin_nhan').doc();
   const now = Timestamp.now();
+  const [u1, u2] = await Promise.all([db.collection('users').doc(uid).get(), db.collection('users').doc(nguoiNhan).get()]);
+  if (!u2.exists) throw thamSoSai('Người nhận không tồn tại.');
+  const ten = { [uid]: u1.get('name') || 'Người dùng', [nguoiNhan]: u2.get('name') || 'Người dùng' };
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(refChat);
     const c = snap.exists ? snap.data() : null;
     if (c && (c.chanBoi || []).length) throw loiNguoiDung('Không gửi được tin nhắn: cuộc trò chuyện đã bị chặn.', 'permission-denied');
     if (!c) {
       tx.set(refChat, {
-        thanhVien: [uid, nguoiNhan].sort(), nguoiMo: uid, taoLuc: now, daTraLoiLuc: null,
+        thanhVien: [uid, nguoiNhan].sort(), ten, nguoiMo: uid, taoLuc: now, daTraLoiLuc: null,
         chanBoi: [], chuaDoc: { [uid]: 0, [nguoiNhan]: 0 },
       });
     }

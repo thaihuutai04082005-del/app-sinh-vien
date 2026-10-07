@@ -109,8 +109,9 @@ const ANH = ['https://x.com/1.jpg', 'https://x.com/2.jpg', 'https://x.com/3.jpg'
     tienIchChung: ['wifi', 'cho_de_xe'], noiQuy: { gioGiac: 'gioi_han', gioDongCua: '23:00', thuCung: true, oQuaDem: false, baoTruocTuan: 2 },
     moTa: 'Nhà trọ sạch sẽ, gần Đại học Đồng Tháp, an ninh tốt, có chỗ để xe.', diaChi: '12 Nguyễn Huệ, Phường 1, Cao Lãnh',
     phuong: 'Phường 1', viTri: new admin.firestore.GeoPoint(10.4599, 105.6377), anh: ANH, video: ['https://x.com/v.mp4'], anhBia: ANH[0],
-    giayTo: ['tro_rieng/x/giay.jpg'], camKet: true,
+    camKet: true,
   });
+  await nhaRef.collection('rieng').doc('giay_to').set({ giayTo: ['https://x.com/giay.jpg'] });
   const phongRef = db.collection('phong_tro').doc();
   await phongRef.set({
     nhaTroId: nhaRef.id, chuTroId: chu.uid, trangThai: 'draft', ten: 'P.101', coGac: true, dienTich: 18, dienTichGac: 8,

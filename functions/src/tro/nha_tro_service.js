@@ -67,6 +67,12 @@ async function kiemTraKhoaDangTin(sdt) {
   }
 }
 
+/** Giấy tờ nhà nằm ở `nha_tro/{id}/rieng/giay_to` (chỉ chủ trọ và admin đọc được), không nằm trong tin công khai. */
+async function docGiayTo(nhaTroId) {
+  const s = await db.collection(COL.nhaTro).doc(nhaTroId).collection('rieng').doc('giay_to').get();
+  return s.exists ? s.get('giayTo') || [] : [];
+}
+
 async function layNhaCuaChu(uid, nhaTroId) {
   const ref = db.collection(COL.nhaTro).doc(nhaTroId);
   const snap = await ref.get();
@@ -101,7 +107,7 @@ async function guiDuyetNhaTro({ uid, xacThuc }, { nhaTroId }) {
   const cfg = await layCauHinh();
   const { ref, n } = await layNhaCuaChu(uid, nhaTroId);
   if (!['draft', 'rejected'].includes(n.trangThai)) throw loiNguoiDung('Nhà trọ này không ở trạng thái nháp.');
-  const loi = K.kiemTraNhaTro({ ...n, viTri: viTriTu(n.viTri) }, cfg);
+  const loi = K.kiemTraNhaTro({ ...n, viTri: viTriTu(n.viTri), giayTo: await docGiayTo(nhaTroId) }, cfg);
   if (loi.length) throw thamSoSai(loi.join(' '));
   await ref.update({
     trangThai: 'pending_review', lyDoTuChoi: null, guiDuyetLuc: Timestamp.now(),
@@ -248,7 +254,7 @@ async function suaNhaTro({ uid }, { nhaTroId, thayDoi }) {
   const { ngay, cho } = tachThayDoi(thayDoi, NHA_SUA_NGAY, NHA_CHO_DUYET);
   if (cho.viTri) cho.viTri = new GeoPoint(cho.viTri.lat, cho.viTri.lng);
   const sau = { ...n, ...ngay, ...cho, viTri: viTriTu(cho.viTri || n.viTri) };
-  const loi = K.kiemTraNhaTro({ ...sau, giayTo: n.giayTo, camKet: true }, cfg);
+  const loi = K.kiemTraNhaTro({ ...sau, giayTo: await docGiayTo(nhaTroId), camKet: true }, cfg);
   if (loi.length) throw thamSoSai(loi.join(' '));
   const cap = { ...ngay, capNhatLuc: Timestamp.now() };
   if (Object.keys(ngay).length) cap.searchText = K.chuTimKiem({ ...n, ...ngay });

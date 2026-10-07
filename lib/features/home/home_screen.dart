@@ -4,9 +4,9 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/image_storage_service.dart';
 import '../shop/screens/shop_screen.dart';
 import '../shop/services/product_service.dart';
-import '../tro/screens/phong_tro_list_screen.dart';
 import '../tro/screens/tro_routes.dart';
-import '../tro/services/phong_tro_service.dart';
+import '../tro/screens/tro_shell.dart';
+import '../tro/services/tro_dich_vu.dart';
 import '../vui_choi/screens/vui_choi_list_screen.dart';
 import '../vui_choi/services/vui_choi_service.dart';
 import '../xe_don_tro/screens/xe_don_tro_screen.dart';
@@ -22,10 +22,7 @@ class HomeScreen extends StatelessWidget {
     (
       'Tìm trọ',
       Icons.home_work_outlined,
-      () => PhongTroListScreen(
-        service: FirestorePhongTroService(),
-        storage: FirebaseImageStorageService(),
-      ),
+      () => TroShell(dv: TroDichVu.firebase()),
     ),
     ('Quán ăn', Icons.restaurant_outlined, null),
     (
