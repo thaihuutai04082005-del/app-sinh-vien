@@ -22,4 +22,16 @@ void main() {
     await tester.pump();
     expect(find.text('Quán ăn sẽ sớm ra mắt'), findsOneWidget);
   });
+
+  testWidgets('Ô tìm kiếm lọc module theo tên', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.enterText(find.byType(TextField), 'shop');
+    await tester.pump();
+    expect(find.text('Shop đồ rẻ'), findsOneWidget);
+    expect(find.text('Tìm trọ'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'xyz');
+    await tester.pump();
+    expect(find.text('Không có mục nào phù hợp'), findsOneWidget);
+  });
 }
