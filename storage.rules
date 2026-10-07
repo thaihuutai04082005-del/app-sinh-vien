@@ -14,9 +14,16 @@ service firebase.storage {
         && int(parts[1]) <= quota.uploads;
     }
 
+    function laAdminTro() {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.tro == true;
+    }
+
     match /{folder}/{uid}/{fileName} {
-      allow read: if folder in ['products', 'booking_xe', 'vui_choi', 'phong_tro'];
-      allow create: if folder in ['products', 'booking_xe', 'vui_choi', 'phong_tro']
+      // tro_rieng: giấy tờ nhà (Tìm trọ) — chỉ chủ trọ và admin Tìm trọ xem.
+      allow read: if folder in ['products', 'booking_xe', 'vui_choi', 'phong_tro', 'tro_anh', 'tro_video']
+        || (folder == 'tro_rieng' && request.auth != null && (request.auth.uid == uid || laAdminTro()));
+      allow create: if folder in ['products', 'booking_xe', 'vui_choi', 'phong_tro', 'tro_anh', 'tro_video', 'tro_rieng']
         && request.auth != null
         && request.auth.uid == uid
         && resource == null

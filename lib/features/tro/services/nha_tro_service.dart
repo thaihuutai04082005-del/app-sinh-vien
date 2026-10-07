@@ -55,10 +55,16 @@ abstract interface class NhaTroService {
 }
 
 class FirebaseNhaTroService implements NhaTroService {
-  FirebaseNhaTroService({required this.api, FirebaseFirestore? firestore})
-    : _db = firestore;
+  FirebaseNhaTroService({
+    required this.api,
+    required this.uid,
+    FirebaseFirestore? firestore,
+  }) : _db = firestore;
 
   final TroApi api;
+
+  /// Người đang dùng (để truy vấn bản nháp của chủ trọ khớp rules).
+  final String uid;
   final FirebaseFirestore? _db;
 
   FirebaseFirestore get _f => _db ?? FirebaseFirestore.instance;
@@ -149,6 +155,8 @@ class FirebaseNhaTroService implements NhaTroService {
   @override
   Stream<List<PhongTro>> phongCuaNha(String nhaTroId) => _phong
       .where('nhaTroId', isEqualTo: nhaTroId)
+      // Thêm điều kiện chủ trọ để truy vấn khớp rules (bản nháp chỉ chủ đọc được).
+      .where('chuTroId', isEqualTo: uid)
       .snapshots()
       .map(
         (s) =>

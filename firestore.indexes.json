@@ -1,4 +1,241 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "tro_thong_bao",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "nguoiNhan",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "taoLuc",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "nha_tro",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "trangThai",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hetHanLuc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_dat_coc",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hanKeTiep",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_dat_coc",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "nhaTroId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_dat_coc",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "chuTroId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_dat_coc",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "chuTroId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "heldAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_dat_coc",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "phongId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sinhVienId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_coc_truc_tiep",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "ketQua",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "daNhac",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "ngayNhanDuKien",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_bao_cao",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "nguoiBao",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "luc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_bao_cao",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "doiTuong.loai",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "doiTuong.id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "trangThai",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "phong_tro",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "nhaTroId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "trangThai",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "phong_tro",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "trangThai",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nhaTro.trangThai",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "phong_tro",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "nhaTroId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "chuTroId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_danh_gia",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "nhaTroId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hienThi",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_vi_pham",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sdt",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "vaiTro",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tro_luu",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "nhaTroId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nhanThongBao",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

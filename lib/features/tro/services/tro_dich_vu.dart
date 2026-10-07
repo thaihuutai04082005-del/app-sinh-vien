@@ -49,9 +49,10 @@ class TroDichVu {
 
   factory TroDichVu.firebase() {
     final api = FirebaseTroApi();
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     return TroDichVu(
-      uid: FirebaseAuth.instance.currentUser?.uid ?? '',
-      nhaTro: FirebaseNhaTroService(api: api),
+      uid: uid,
+      nhaTro: FirebaseNhaTroService(api: api, uid: uid),
       datCoc: FirebaseDatCocService(api: api),
       cocTrucTiep: FirebaseCocTrucTiepService(api: api),
       chat: FirebaseChatService(api: api),
