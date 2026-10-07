@@ -49,6 +49,7 @@ Giống Shopee: **1 tài khoản, nhiều "ngành hàng"**, mỗi ngành hàng l
 > Mỗi module dưới đây được thiết kế theo đúng logic 2 vai trò của Shopee: **Người bán/Người đăng tin** (seller) và **Người mua/Người tìm** (buyer) — cùng với quy trình, trạng thái đơn, và hệ thống đánh giá riêng cho từng loại hình.
 
 ### 3.1 Tìm trọ
+> ⚠️ **Đã thay thế.** Mô tả dưới đây là bản ý tưởng ban đầu. Tìm trọ hiện làm theo [`dac-ta-tim-tro-quan-an.md`](dac-ta-tim-tro-quan-an.md) (Phần 2) — xem tiến độ ở [`ke-hoach-tim-tro-quan-an.md`](ke-hoach-tim-tro-quan-an.md). Chỗ nào khác nhau thì theo đặc tả mới.
 > Tham khảo thêm từ **SpareRoom** (Anh) và **Uniplaces/Student.com** (chuyên trọ sinh viên quốc tế) — 2 điểm họ làm tốt hơn các app trọ Việt Nam thông thường: **xác thực danh tính** để chống lừa đảo, và **lọc theo phong cách sống** chứ không chỉ lọc theo giá/tiện ích.
 
 **Vai trò Chủ trọ (người đăng tin — giống "Shop" trên Shopee):**
@@ -346,7 +347,7 @@ tro/
 }
 ```
 
-**Collection `phong_tro`** (module Tìm trọ)
+**Collection `phong_tro`** (module Tìm trọ) — ⚠️ **cấu trúc cũ, đã bỏ.** Mô hình mới gồm `nha_tro` + `phong_tro` + `tro_dat_coc`… theo mục 2.17 của đặc tả; xem `firestore.rules` và `functions/src/tro/`.
 ```
 {
   id: string,
