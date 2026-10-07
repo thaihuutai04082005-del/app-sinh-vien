@@ -54,6 +54,8 @@ class TroSkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView.separated(
+    // shrinkWrap: dùng được cả khi nằm trong trang cuộn khác (không bị "unbounded height").
+    shrinkWrap: true,
     physics: const NeverScrollableScrollPhysics(),
     padding: const EdgeInsets.all(TroSpacing.screen),
     itemCount: count,

@@ -479,6 +479,7 @@ class _ThemPhongScreenState extends State<ThemPhongScreen> {
       children: [
         Expanded(
           child: DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: _cachDien,
             decoration: const InputDecoration(labelText: 'Tiền điện'),
             items: [
@@ -503,6 +504,7 @@ class _ThemPhongScreenState extends State<ThemPhongScreen> {
       children: [
         Expanded(
           child: DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: _cachNuoc,
             decoration: const InputDecoration(labelText: 'Tiền nước'),
             items: [
