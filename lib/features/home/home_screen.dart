@@ -4,6 +4,9 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/image_storage_service.dart';
 import '../shop/screens/shop_screen.dart';
 import '../shop/services/product_service.dart';
+import '../quan_an/screens/quan_an_routes.dart';
+import '../quan_an/screens/quan_an_shell.dart';
+import '../quan_an/services/quan_an_dich_vu.dart';
 import '../tro/screens/tro_routes.dart';
 import '../tro/screens/tro_shell.dart';
 import '../tro/services/tro_dich_vu.dart';
@@ -24,7 +27,11 @@ class HomeScreen extends StatelessWidget {
       Icons.home_work_outlined,
       () => TroShell(dv: TroDichVu.firebase()),
     ),
-    ('Quán ăn', Icons.restaurant_outlined, null),
+    (
+      'Quán ăn',
+      Icons.restaurant_outlined,
+      () => QuanAnShell(dv: QuanAnDichVu.firebase()),
+    ),
     (
       'Xe dọn trọ',
       Icons.local_shipping_outlined,
@@ -57,10 +64,12 @@ class HomeScreen extends StatelessWidget {
           .showSnackBar(SnackBar(content: Text('$label sẽ sớm ra mắt')));
       return;
     }
-    // Tìm trọ có giao diện riêng (xanh biển – trắng) nên mở bằng route của module.
-    final route = label == 'Tìm trọ'
-        ? troRoute<void>((_) => builder())
-        : MaterialPageRoute<void>(builder: (_) => builder());
+    // Tìm trọ và Quán ăn có giao diện riêng (xanh biển – trắng) nên mở bằng route của module.
+    final route = switch (label) {
+      'Tìm trọ' => troRoute<void>((_) => builder()),
+      'Quán ăn' => quanAnRoute<void>((_) => builder()),
+      _ => MaterialPageRoute<void>(builder: (_) => builder()),
+    };
     Navigator.of(context).push(route);
   }
 

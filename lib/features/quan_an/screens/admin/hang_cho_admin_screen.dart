@@ -135,7 +135,8 @@ class _ChipLoc extends StatelessWidget {
   final List<ViecAdminQuan> tatCa;
   final ValueChanged<String?> onChon;
 
-  int _dem(Set<String> loai) => tatCa.where((v) => loai.contains(v.loai)).length;
+  int _dem(Set<String> loai) =>
+      tatCa.where((v) => loai.contains(v.loai)).length;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -209,7 +210,7 @@ class _DanhSach extends StatelessWidget {
                   runSpacing: QuanAnSpacing.xs,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    if (huyHieu != null) huyHieu,
+                    ?huyHieu,
                     Text(_nhanLoai(v), style: QuanAnText.bodySmall),
                   ],
                 ),
@@ -381,9 +382,18 @@ final _khoaCauHinh = <String, (String, int Function(QuanAnConfig))>{
     'Khách không tới lấy sau "Sẵn sàng" (phút)',
     (c) => c.khachKhongToiLayPhut,
   ),
-  'phanDoiPhut': ('Hạn phản đối "khách không nhận" (phút)', (c) => c.phanDoiPhut),
-  'giuThemPhut': ('Giữ tiền thêm sau "khách không nhận" (phút)', (c) => c.giuThemPhut),
-  'khieuNaiPhut': ('Hạn khiếu nại sau bằng chứng (phút)', (c) => c.khieuNaiPhut),
+  'phanDoiPhut': (
+    'Hạn phản đối "khách không nhận" (phút)',
+    (c) => c.phanDoiPhut,
+  ),
+  'giuThemPhut': (
+    'Giữ tiền thêm sau "khách không nhận" (phút)',
+    (c) => c.giuThemPhut,
+  ),
+  'khieuNaiPhut': (
+    'Hạn khiếu nại sau bằng chứng (phút)',
+    (c) => c.khieuNaiPhut,
+  ),
   'quanTraLoiPhut': ('Quán trả lời khiếu nại (phút)', (c) => c.quanTraLoiPhut),
   'tuHoanTatPhut': ('Tự hoàn tất đơn sau (phút)', (c) => c.tuHoanTatPhut),
   'nhacTuHoanTatSauPhut': (
@@ -391,8 +401,14 @@ final _khoaCauHinh = <String, (String, int Function(QuanAnConfig))>{
     (c) => c.nhacTuHoanTatSauPhut,
   ),
   'quaHanPhut': ('Đơn quá hạn chưa có bằng chứng (phút)', (c) => c.quaHanPhut),
-  'khieuNaiKhanPhut': ('Khiếu nại treo thành cờ khẩn (phút)', (c) => c.khieuNaiKhanPhut),
-  'henGioToiThieuPhut': ('Hẹn giờ tối thiểu (phút)', (c) => c.henGioToiThieuPhut),
+  'khieuNaiKhanPhut': (
+    'Khiếu nại treo thành cờ khẩn (phút)',
+    (c) => c.khieuNaiKhanPhut,
+  ),
+  'henGioToiThieuPhut': (
+    'Hẹn giờ tối thiểu (phút)',
+    (c) => c.henGioToiThieuPhut,
+  ),
   'henGioToiDaPhut': ('Hẹn giờ tối đa (phút)', (c) => c.henGioToiDaPhut),
   'datBanQuanXacNhanPhut': (
     'Quán xác nhận đặt bàn (phút)',

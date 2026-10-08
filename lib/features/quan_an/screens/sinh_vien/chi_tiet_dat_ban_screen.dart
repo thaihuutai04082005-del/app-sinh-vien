@@ -44,9 +44,7 @@ class _ChiTietDatBanScreenState extends State<ChiTietDatBanScreen> {
           : QuanAnStream<DatBan?>(
               stream: () => widget.dv.datBan.datBan(widget.banId),
               builder: (context, b) => b == null
-                  ? const QuanAnEmptyState(
-                      title: 'Không tìm thấy lượt đặt bàn',
-                    )
+                  ? const QuanAnEmptyState(title: 'Không tìm thấy lượt đặt bàn')
                   : _NoiDung(dv: widget.dv, ban: b, cfg: c.data!),
             ),
     ),
@@ -56,8 +54,10 @@ class _ChiTietDatBanScreenState extends State<ChiTietDatBanScreen> {
 QuanAnBadgeKind _kieuBadge(String s) => switch (s) {
   'confirmed' || 'arrived' => QuanAnBadgeKind.moCua,
   'pending' => QuanAnBadgeKind.sapDong,
-  'rejected' || 'expired' || 'cancelled_restaurant' || 'no_show' =>
-    QuanAnBadgeKind.dongCua,
+  'rejected' ||
+  'expired' ||
+  'cancelled_restaurant' ||
+  'no_show' => QuanAnBadgeKind.dongCua,
   _ => QuanAnBadgeKind.chung,
 };
 
@@ -212,8 +212,7 @@ class _NoiDungState extends State<_NoiDung> {
                   b.huyBiTinhBoHen(now, widget.cfg)) ...[
                 const SizedBox(height: QuanAnSpacing.md),
                 const QuanAnWarningBox(
-                  message:
-                      'Đã sát giờ hẹn: hủy lúc này sẽ tính 1 lần bỏ hẹn đặt bàn.',
+                  message: 'Đã sát giờ hẹn: hủy lúc này sẽ tính 1 lần bỏ hẹn đặt bàn.',
                 ),
               ],
               const SizedBox(height: QuanAnSpacing.xl),

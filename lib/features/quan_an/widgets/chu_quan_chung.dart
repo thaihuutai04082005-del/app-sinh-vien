@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../widgets/quan_an_theme.dart';
+import 'quan_an_theme.dart';
 
 /// Thành phần dùng chung của các màn hình phía chủ quán (không phải màn hình riêng).
 
@@ -211,13 +211,10 @@ class HopThongBao extends StatelessWidget {
     super.key,
   });
 
-  const HopThongBao.canhBao({
-    required this.noiDung,
-    this.child,
-    super.key,
-  }) : icon = Icons.warning_amber_rounded,
-       nen = QuanAnColors.warningSoft,
-       chu = QuanAnColors.warning;
+  const HopThongBao.canhBao({required this.noiDung, this.child, super.key})
+    : icon = Icons.warning_amber_rounded,
+      nen = QuanAnColors.warningSoft,
+      chu = QuanAnColors.warning;
 
   const HopThongBao.loi({required this.noiDung, this.child, super.key})
     : icon = Icons.error_outline_rounded,
@@ -298,8 +295,7 @@ class _QuanAnDongHoState extends State<QuanAnDongHo> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      widget.builder(context, DateTime.now());
+  Widget build(BuildContext context) => widget.builder(context, DateTime.now());
 }
 
 /// "04:32" cho đếm ngược ngắn (không âm).
@@ -514,8 +510,11 @@ ButtonStyle kieuNutNguyHiem() => OutlinedButton.styleFrom(
 );
 
 /// Ngày (giờ Việt Nam) → mốc 00:00 giờ Việt Nam, đổi sang UTC.
-DateTime dauNgayVn(DateTime ngay) =>
-    DateTime.utc(ngay.year, ngay.month, ngay.day).subtract(const Duration(hours: 7));
+DateTime dauNgayVn(DateTime ngay) => DateTime.utc(
+  ngay.year,
+  ngay.month,
+  ngay.day,
+).subtract(const Duration(hours: 7));
 
 /// Ngày (giờ Việt Nam) → mốc 23:59:59 giờ Việt Nam, đổi sang UTC ("ngày kết thúc tính hết").
 DateTime cuoiNgayVn(DateTime ngay) => DateTime.utc(

@@ -19,11 +19,20 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.tro == true;
     }
 
+    function laAdminQuanAn() {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.quanAn == true;
+    }
+
     match /{folder}/{uid}/{fileName} {
       // tro_rieng: giấy tờ nhà (Tìm trọ) — chỉ chủ trọ và admin Tìm trọ xem.
+      // quan_an_rieng: giấy tờ quán (Quán ăn) — chỉ chủ quán và admin Quán ăn xem.
       allow read: if folder in ['products', 'booking_xe', 'vui_choi', 'phong_tro', 'tro_anh', 'tro_video']
-        || (folder == 'tro_rieng' && request.auth != null && (request.auth.uid == uid || laAdminTro()));
-      allow create: if folder in ['products', 'booking_xe', 'vui_choi', 'phong_tro', 'tro_anh', 'tro_video', 'tro_rieng']
+        || (folder.matches('quan_an_.*') && folder != 'quan_an_rieng')
+        || (folder == 'tro_rieng' && request.auth != null && (request.auth.uid == uid || laAdminTro()))
+        || (folder == 'quan_an_rieng' && request.auth != null && (request.auth.uid == uid || laAdminQuanAn()));
+      allow create: if (folder in ['products', 'booking_xe', 'vui_choi', 'phong_tro', 'tro_anh', 'tro_video', 'tro_rieng']
+                        || folder.matches('quan_an_.*'))
         && request.auth != null
         && request.auth.uid == uid
         && resource == null

@@ -118,8 +118,7 @@ class _KhieuNaiDonScreenState extends State<KhieuNaiDonScreen> {
                             const SizedBox(height: QuanAnSpacing.md),
                           ],
                           const QuanAnWarningBox(
-                            message:
-                                'Quán báo bạn không nhận món. Nếu bạn đã nhận món hoặc đã có mặt đúng hẹn, hãy mô tả và gửi bằng chứng (nếu có) để admin xem xét. Chưa có kết luận nào cho tới khi admin xét.',
+                            message: 'Quán báo bạn không nhận món. Nếu bạn đã nhận món hoặc đã có mặt đúng hẹn, hãy mô tả và gửi bằng chứng (nếu có) để admin xem xét. Chưa có kết luận nào cho tới khi admin xét.',
                           ),
                         ] else
                           QuanAnWarningBox(

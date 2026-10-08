@@ -102,10 +102,7 @@ class AdminDong extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 124,
-          child: Text(nhan, style: QuanAnText.bodySmall),
-        ),
+        SizedBox(width: 124, child: Text(nhan, style: QuanAnText.bodySmall)),
         Expanded(
           child: Text(
             giaTri.isEmpty ? '—' : giaTri,

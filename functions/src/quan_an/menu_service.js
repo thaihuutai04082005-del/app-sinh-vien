@@ -12,7 +12,8 @@ const QS = require('./quan_service');
 async function quanCuaChu(uid, quanId) {
   const { ref, quan } = await QS.layQuanCuaChu(uid, quanId);
   kiemTraKhoaBan(quan);
-  if (['suspended', 'closed'].includes(quan.trangThai)) throw loiNguoiDung('Quán này không sửa menu được.');
+  // Thêm menu SAU khi quán được duyệt (mục 3.3 Bước 3).
+  if (!['active', 'hidden'].includes(quan.trangThai)) throw loiNguoiDung('Quán cần được duyệt trước khi thêm menu.');
   return { ref, quan };
 }
 

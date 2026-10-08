@@ -133,6 +133,5 @@ class _DongHoTickState extends State<DongHoTick> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      widget.builder(context, DateTime.now());
+  Widget build(BuildContext context) => widget.builder(context, DateTime.now());
 }

@@ -191,9 +191,7 @@ class _DatBanScreenState extends State<DatBanScreen> {
     setState(() => _dangGui = false);
     if (ok && id != null) {
       await Navigator.of(context).pushReplacement(
-        quanAnRoute(
-          (_) => ChiTietDatBanScreen(dv: widget.dv, banId: id!),
-        ),
+        quanAnRoute((_) => ChiTietDatBanScreen(dv: widget.dv, banId: id!)),
       );
     }
   }
@@ -286,7 +284,10 @@ class _DatBanScreenState extends State<DatBanScreen> {
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.money_off_rounded, color: QuanAnColors.success),
+                        Icon(
+                          Icons.money_off_rounded,
+                          color: QuanAnColors.success,
+                        ),
                         SizedBox(width: QuanAnSpacing.sm),
                         Expanded(
                           child: Text(
@@ -353,7 +354,10 @@ class _DatBanScreenState extends State<DatBanScreen> {
                       ),
                     ],
                   ),
-                  Text('Từ $nMin đến $nMax người.', style: QuanAnText.bodySmall),
+                  Text(
+                    'Từ $nMin đến $nMax người.',
+                    style: QuanAnText.bodySmall,
+                  ),
                   const SizedBox(height: QuanAnSpacing.lg),
                   TextField(
                     controller: _ghiChu,
@@ -396,10 +400,7 @@ class _DatBanScreenState extends State<DatBanScreen> {
             ),
           ),
         ),
-        _ThanhDuoi(
-          dangGui: _dangGui,
-          onGui: () => _gui(cfg),
-        ),
+        _ThanhDuoi(dangGui: _dangGui, onGui: () => _gui(cfg)),
       ],
     );
   }

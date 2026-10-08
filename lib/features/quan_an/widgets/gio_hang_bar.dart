@@ -35,10 +35,8 @@ class GioHangBar extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => QuanAnDieuHuong.mo(
-                    context,
-                    (_) => GioHangScreen(dv: dv),
-                  ),
+                  onPressed: () =>
+                      QuanAnDieuHuong.mo(context, (_) => GioHangScreen(dv: dv)),
                   child: Text(
                     '🛒 Xem giỏ (${gio.soMon} món · ${formatGiaGon(gio.tamTinh)})',
                     textAlign: TextAlign.center,

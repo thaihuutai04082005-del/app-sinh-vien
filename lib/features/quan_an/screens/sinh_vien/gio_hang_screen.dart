@@ -225,9 +225,7 @@ class _DongGio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tuyChon = dong.tuyChon
-        .map((t) => '${t.nhom}: ${t.ten}')
-        .join(' · ');
+    final tuyChon = dong.tuyChon.map((t) => '${t.nhom}: ${t.ten}').join(' · ');
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(QuanAnSpacing.md),
@@ -320,7 +318,9 @@ class _DongGio extends StatelessWidget {
                       onPressed: onGhiChu,
                       icon: const Icon(Icons.edit_note, size: 20),
                       label: const Text('Ghi chú'),
-                      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                      ),
                     ),
                     IconButton(
                       tooltip: 'Xóa món',
@@ -382,7 +382,10 @@ class _ThanhDuoi extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Tạm tính · $soMon món', style: QuanAnText.bodySmall),
+                      Text(
+                        'Tạm tính · $soMon món',
+                        style: QuanAnText.bodySmall,
+                      ),
                       Text(formatPrice(tamTinh), style: QuanAnText.price),
                     ],
                   ),

@@ -80,9 +80,7 @@ class LichGioMoCuaEditor extends StatelessWidget {
 
   void _apDungChoCaTuan() {
     final mau = lich[1] ?? const <CaMoCua>[];
-    onChanged({
-      for (var d = 1; d <= 7; d++) d: List<CaMoCua>.of(mau),
-    });
+    onChanged({for (var d = 1; d <= 7; d++) d: List<CaMoCua>.of(mau)});
   }
 
   @override
@@ -154,16 +152,17 @@ class _NgayMoCua extends StatelessWidget {
               Text(
                 _mo ? 'Mở cửa' : 'Nghỉ',
                 style: QuanAnText.bodySmall.copyWith(
-                  color: _mo ? QuanAnColors.success : QuanAnColors.textSecondary,
+                  color: _mo
+                      ? QuanAnColors.success
+                      : QuanAnColors.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: QuanAnSpacing.sm),
               Switch(
                 value: _mo,
-                onChanged: (v) => onDoi(
-                  v ? const [LichGioMoCuaEditor.caMacDinh] : const [],
-                ),
+                onChanged: (v) =>
+                    onDoi(v ? const [LichGioMoCuaEditor.caMacDinh] : const []),
               ),
             ],
           ),
@@ -187,7 +186,11 @@ class _NgayMoCua extends StatelessWidget {
                   ),
                   OutlinedButton(
                     onPressed: () async {
-                      final g = await chonGio(context, ca[i].den, 'Giờ đóng cửa');
+                      final g = await chonGio(
+                        context,
+                        ca[i].den,
+                        'Giờ đóng cửa',
+                      );
                       if (g != null) {
                         _suaCa(i, CaMoCua(tu: ca[i].tu, den: g));
                       }

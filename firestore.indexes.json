@@ -235,6 +235,132 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "qa_don",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hanKeTiep",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qa_dat_ban",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hanKeTiep",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qa_don",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "quanId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "taoLuc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qa_dat_ban",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "quanId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "taoLuc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qa_don",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "ketThucLuc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qa_danh_gia",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "svId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "taoLuc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qa_bao_cao",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "nguoiBao",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "luc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qa_khuyen_mai",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "trangThai",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "ketThuc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qa_thong_bao",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "nguoiNhan",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "taoLuc",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -151,8 +151,8 @@ class _NoiDungState extends State<_NoiDung> {
       noiDung: switch (h) {
         _HanhDong.luaDao => 'Kết luận $ten lừa đảo.\n\n$_hauQuaLuaDao',
         _HanhDong.khoaBan => 'Khóa bán vĩnh viễn $ten.\n\n$_hauQuaKhoaBan',
-        _HanhDong.dinhChi || _HanhDong.an =>
-          '${_nutLabel(h)} $ten.\n\n$_hauQuaAnDinhChi',
+        _HanhDong.dinhChi ||
+        _HanhDong.an => '${_nutLabel(h)} $ten.\n\n$_hauQuaAnDinhChi',
         _ => '${_nutLabel(h)} $ten.',
       },
       dongY: _nutLabel(h),

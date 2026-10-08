@@ -47,7 +47,8 @@ class DonTimeline extends StatelessWidget {
       children: [
         for (var i = 0; i < cacMoc.length; i++)
           _Dong(
-            nhan: trangThaiDonLabels[cacMoc[i].trangThai] ?? cacMoc[i].trangThai,
+            nhan:
+                trangThaiDonLabels[cacMoc[i].trangThai] ?? cacMoc[i].trangThai,
             luc: cacMoc[i].luc,
             ghiChu: _ghiChu(cacMoc[i]),
             hienTai: i == cacMoc.length - 1,

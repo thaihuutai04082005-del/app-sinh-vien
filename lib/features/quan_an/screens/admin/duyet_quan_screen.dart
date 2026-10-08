@@ -116,16 +116,14 @@ class _DuyetQuanScreenState extends State<DuyetQuanScreen> {
   bool get _laSua => _viec.loai == 'chinh_sua' || _viec.loai == 'nang_cap';
 
   Map<String, dynamic> get _ban => {
-    for (final e
-        in ((_viec.duLieu['banChinhSua'] as Map?) ?? const {}).entries)
+    for (final e in ((_viec.duLieu['banChinhSua'] as Map?) ?? const {}).entries)
       if (!_truongHeThong.contains(e.key)) e.key as String: e.value,
   };
 
   /// Quán như sẽ hiển thị sau khi duyệt (bản chỉnh sửa đè lên bản hiện tại).
   QuanAn get _quanMoi => QuanAn.fromMap(_viec.id, {..._viec.duLieu, ..._ban});
 
-  bool get _hoKinhDoanh =>
-      _viec.loai == 'nang_cap' || _quanMoi.laHoKinhDoanh;
+  bool get _hoKinhDoanh => _viec.loai == 'nang_cap' || _quanMoi.laHoKinhDoanh;
 
   Future<void> _xong(Future<void> Function() viec, String ok) async {
     if (await chayThaoTac(context, viec, thanhCong: ok) && mounted) {
@@ -234,7 +232,7 @@ class _DuyetQuanScreenState extends State<DuyetQuanScreen> {
       ),
       body: AdminTrang(
         children: [
-          if (_viec.uuTien <= 2 && q.khaiSaiLoai != null)
+          if (q.khaiSaiLoai != null)
             QuanAnWarningBox(
               message:
                   'Nghi khai sai loại'
@@ -403,12 +401,15 @@ class _ThongTin extends StatelessWidget {
         const SizedBox(height: QuanAnSpacing.md),
         AdminDong('Món chính', q.loaiMonLabel),
         AdminDong('Số điện thoại', q.sdt),
-        AdminDong('Hình thức', [
-          if (q.phucVu.anTaiQuan) 'Ăn tại quán',
-          if (q.phucVu.mangDi) 'Mang đi',
-          if (q.nhanDatBan) 'Nhận đặt bàn',
-          if (q.datMon.bat) 'Đặt món qua app',
-        ].join(' · ')),
+        AdminDong(
+          'Hình thức',
+          [
+            if (q.phucVu.anTaiQuan) 'Ăn tại quán',
+            if (q.phucVu.mangDi) 'Mang đi',
+            if (q.nhanDatBan) 'Nhận đặt bàn',
+            if (q.datMon.bat) 'Đặt món qua app',
+          ].join(' · '),
+        ),
         AdminDong('Gửi lúc', formatNgayGio(viec.luc)),
         if (q.moTa.isNotEmpty) AdminDong('Mô tả', q.moTa),
       ],
@@ -525,7 +526,10 @@ class _GiayTo extends StatelessWidget {
             children: [
               AdminDong('Mã số thuế', g.maSoThue),
               const SizedBox(height: QuanAnSpacing.sm),
-              const Text('Giấy chứng nhận hộ kinh doanh', style: QuanAnText.label),
+              const Text(
+                'Giấy chứng nhận hộ kinh doanh',
+                style: QuanAnText.label,
+              ),
               const SizedBox(height: QuanAnSpacing.xs),
               AdminAnh(g.anhGiayChungNhan, khiRong: 'Chưa có ảnh'),
               if (g.anhAttp.isNotEmpty) ...[
@@ -570,9 +574,13 @@ class _SoSanh extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _GiaTri(khoa: e.key, v: viec.duLieu[e.key])),
+              Expanded(
+                child: _GiaTri(khoa: e.key, v: viec.duLieu[e.key]),
+              ),
               const SizedBox(width: QuanAnSpacing.md),
-              Expanded(child: _GiaTri(khoa: e.key, v: e.value, moi: true)),
+              Expanded(
+                child: _GiaTri(khoa: e.key, v: e.value, moi: true),
+              ),
             ],
           ),
         ],
@@ -635,17 +643,19 @@ class _GiaTri extends StatelessWidget {
       ].join(' · ');
     }
     if (x is List) return x.join(', ');
-    if (x is Map) return x.entries.map((e) => '${e.key}: ${e.value}').join('\n');
+    if (x is Map) {
+      return x.entries.map((e) => '${e.key}: ${e.value}').join('\n');
+    }
     return '$x';
   }
 
   @override
   Widget build(BuildContext context) {
     if (_truongAnh.contains(khoa)) {
-      final urls = v is String ? [if ((v as String).isNotEmpty) v as String] : danhSachChuoi(v);
-      return urls.isEmpty
-          ? const Text('—')
-          : AdminAnh(urls, kichThuoc: 64);
+      final urls = v is String
+          ? [if ((v as String).isNotEmpty) v as String]
+          : danhSachChuoi(v);
+      return urls.isEmpty ? const Text('—') : AdminAnh(urls, kichThuoc: 64);
     }
     return Text(
       _chu(),
