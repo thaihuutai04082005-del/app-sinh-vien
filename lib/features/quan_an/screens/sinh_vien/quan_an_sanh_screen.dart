@@ -135,9 +135,7 @@ class _QuanAnSanhScreenState extends State<QuanAnSanhScreen> {
             IconButton(
               tooltip: _banDo ? 'Xem danh sách' : 'Xem trên bản đồ',
               onPressed: () => setState(() => _banDo = !_banDo),
-              icon: Icon(
-                _banDo ? Icons.view_list_rounded : Icons.map_outlined,
-              ),
+              icon: Icon(_banDo ? Icons.view_list_rounded : Icons.map_outlined),
             ),
         ],
       ),

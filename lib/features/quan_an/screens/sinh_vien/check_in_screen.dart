@@ -7,7 +7,6 @@ import '../../models/quan_an_config.dart';
 import '../../models/quan_an_filter.dart';
 import '../../services/quan_an_api.dart' show ApiException;
 import '../../services/quan_an_dich_vu.dart';
-import '../../widgets/quan_an_async.dart';
 import '../../widgets/quan_an_media_field.dart';
 import '../../widgets/quan_an_status_badge.dart';
 import '../../widgets/quan_an_theme.dart';
@@ -301,7 +300,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Hiện công khai'),
-                    subtitle: const Text('Cho người khác thấy ảnh và cảm nghĩ này.'),
+                    subtitle: const Text(
+                      'Cho người khác thấy ảnh và cảm nghĩ này.',
+                    ),
                     value: _congKhai,
                     onChanged: (v) => setState(() => _congKhai = v),
                   ),

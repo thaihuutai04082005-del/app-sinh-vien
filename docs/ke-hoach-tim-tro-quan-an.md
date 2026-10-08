@@ -35,6 +35,23 @@
 - `lib/features/auth/` — xác thực số điện thoại / người thật, duyệt danh tính.
 - `firestore.rules`, `storage.rules`, `firestore.indexes.json` — chủ trọ chỉ ghi bản nháp; mọi thứ khác do server ghi.
 
+## Cấu trúc code — Quán ăn
+- `functions/src/quan_an/` — `api.js` (callable `quanAnApi`, mọi thao tác), `dinh_ky.js` (`quanAnDinhKy` mỗi phút, `quanAnHangDem` 03:00), `cong_gia_lap.js` (webhook `quanAnCongBaoVe`), các service (quán, menu, đơn món, đặt bàn, check-in, tương tác, admin).
+  - `logic/` là phần thuần: máy trạng thái đơn món (bảng 3.5i) và đặt bàn, giờ mở cửa, tính giá + khuyến mãi, kiểm tra, vi phạm, cảnh báo chat, đánh giá, "Sinh viên hay ăn".
+  - Thời lượng / ngưỡng (bảng 3.16) ở `config.js`, admin sửa được ở `qa_cau_hinh/hien_hanh`.
+- `lib/features/quan_an/` — `models/`, `services/` (gom trong `QuanAnDichVu`), `widgets/`, `screens/{sinh_vien,chu_quan,tuong_tac,admin}`; mở bằng `quanAnRoute` (`screens/quan_an_routes.dart`), khung `QuanAnShell`.
+- Hợp đồng dữ liệu + API: [`quan-an-hop-dong.md`](quan-an-hop-dong.md). Collection tiền tố `qa_`; thư mục Storage `quan_an_*`.
+
+## Kiểm thử — Quán ăn
+| Phần | Lệnh | Kết quả |
+|---|---|---|
+| Logic backend (cả hai module) | `cd functions && npm test` | 147 qua |
+| Luồng đầu-cuối trên emulator | `... emulators:exec --only auth,firestore,functions --project demo-app-sinh-vien "node functions/test-e2e/quan_an_luong.e2e.js"` | 34 bước qua |
+| Rules | `cd test-rules && npx firebase-tools emulators:exec --only firestore --project demo-rules "node quan_an_rules.test.mjs"` | 18 qua |
+| Flutter (model, dịch vụ, mở thử mọi màn ở 390 / 1300 px) | `flutter test` | 306 qua |
+
+Chạy e2e cần thêm dòng `QA_CONG_BI_MAT=<chuỗi ngẫu nhiên>` trong `functions/.secret.local`.
+
 ## Kiểm thử — Tìm trọ
 | Phần | Lệnh | Kết quả |
 |---|---|---|
@@ -53,7 +70,8 @@ Chạy app với emulator: `flutter run -d chrome --dart-define=EMULATOR=true` (
    - `firebase functions:secrets:set TRO_CONG_BI_MAT`
    - `firebase functions:secrets:set TK_BI_MAT`
 3. `firebase deploy --only functions,firestore:rules,firestore:indexes,storage`
-4. Trong Firebase Console → Firestore, tạo document `admins/<uid của bạn>` với `tro: true`, `danhTinh: true` (bool) để vào hàng chờ admin.
+   - `firebase functions:secrets:set QA_CONG_BI_MAT` (cổng thanh toán giả lập của Quán ăn)
+4. Trong Firebase Console → Firestore, tạo document `admins/<uid của bạn>` với `tro: true`, `danhTinh: true`, `quanAn: true` (bool) để vào hàng chờ admin. Với emulator: `node functions/scripts/cap_admin_emulator.js EMAIL`.
 5. Xóa các document cũ trong collection `phong_tro` có dạng tin phẳng (dữ liệu thử của bản đầu) — mô hình mới không đọc chúng.
 6. OTP đang là bản thử nghiệm: mã luôn là `123456` (chưa gửi SMS thật).
 
@@ -67,3 +85,9 @@ Chạy app với emulator: `flutter run -d chrome --dart-define=EMULATOR=true` (
 
 ## Khác biệt so với bản đầu của app
 - `phong_tro` phẳng cũ đã được thay bằng `nha_tro` + `phong_tro` (+ `tro_dat_coc`, …) theo mục 2.17. Màn hình cũ (`phong_tro_list_screen`, `dang_phong_tro_screen`, …) đã xóa.
+
+## Khác biệt so với đặc tả — Quán ăn (tạm thời)
+- Cùng các khác biệt của Tìm trọ: chưa chụp ảnh / quay trong app kèm GPS (bằng chứng giao hàng, check-in dùng GPS thiết bị nhưng ảnh là tải lên), xác thực người thật do admin duyệt tay không lưu ảnh CCCD, cổng thanh toán giả lập, chưa đăng ký token FCM phía app.
+- Đánh giá: người đánh giá cần email đã xác thực HOẶC OTP số điện thoại.
+- Thời gian chuẩn bị tối đa 240 phút là hằng số trong app, chưa nằm trong cấu hình admin.
+- Thư mục Storage của module đều bắt đầu `quan_an_`.

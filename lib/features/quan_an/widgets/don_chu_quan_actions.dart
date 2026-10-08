@@ -508,7 +508,7 @@ class _BangChungSheetState extends State<_BangChungSheet> {
           const SizedBox(height: QuanAnSpacing.lg),
           QuanAnMediaField(
             storage: widget.dv.storage,
-            folder: 'qa_bang_chung',
+            folder: 'quan_an_bang_chung',
             nhan: 'Ảnh',
             toiThieu: 1,
             toiDa: 1,

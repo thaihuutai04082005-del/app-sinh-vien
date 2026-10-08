@@ -42,9 +42,7 @@ class _QuanAnCardState extends State<QuanAnCard> {
         ? q.anhBia
         : (q.anhMatTien.isNotEmpty ? q.anhMatTien.first : '');
     final nhan = q.nhanHuyHieu;
-    final phu = [
-      if (q.loaiMon.isNotEmpty) q.loaiMonLabel,
-    ].join(' · ');
+    final phu = [if (q.loaiMon.isNotEmpty) q.loaiMonLabel].join(' · ');
     final viTri = [
       if (k.khoangCach != null) 'Cách bạn ${formatKhoangCach(k.khoangCach!)}',
       if (q.phuong.isNotEmpty) q.phuong,
@@ -144,9 +142,7 @@ class _QuanAnCardState extends State<QuanAnCard> {
                       ),
                       if (phu.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(
-                            top: QuanAnSpacing.xs,
-                          ),
+                          padding: const EdgeInsets.only(top: QuanAnSpacing.xs),
                           child: Text(
                             phu,
                             style: QuanAnText.bodySmall,
@@ -156,9 +152,7 @@ class _QuanAnCardState extends State<QuanAnCard> {
                         ),
                       if (viTri.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(
-                            top: QuanAnSpacing.xs,
-                          ),
+                          padding: const EdgeInsets.only(top: QuanAnSpacing.xs),
                           child: Text(
                             viTri,
                             style: QuanAnText.bodySmall,

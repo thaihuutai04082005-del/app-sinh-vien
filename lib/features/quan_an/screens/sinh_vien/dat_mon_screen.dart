@@ -172,7 +172,7 @@ class _DatMonScreenState extends State<DatMonScreen> {
   // ---------------------------------------------------------------- Báo giá
 
   /// Hệ thống tính lại toàn bộ giá theo lựa chọn hiện tại.
-  Future<void> _tinhGia() async {
+  Future<void> _tinhGia({bool giuLoiDat = false}) async {
     final gio = widget.dv.gioHang.gio;
     final lan = ++_lanTinh;
     if (gio.laRong) return;
@@ -212,7 +212,7 @@ class _DatMonScreenState extends State<DatMonScreen> {
       setState(() {
         _baoGia = bg;
         _dangTinh = false;
-        _loiDat = null;
+        if (!giuLoiDat) _loiDat = null;
         // Tiền mặt không còn hợp lệ với đơn này: quay về trả trên app.
         if (_cachTra == 'tien_mat' &&
             !_tienMatDuoc(bg) &&

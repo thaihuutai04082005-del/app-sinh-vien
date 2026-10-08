@@ -183,7 +183,7 @@ class _QuanAnBanDoState extends State<QuanAnBanDo> {
                     color: QuanAnColors.primary.withValues(alpha: 0.08),
                     borderColor: QuanAnColors.primary,
                     borderStrokeWidth: 1.5,
-                    pattern: const StrokePattern.dashed(segments: [8, 6]),
+                    pattern: StrokePattern.dashed(segments: const [8, 6]),
                   ),
                 ],
               ),
@@ -196,7 +196,8 @@ class _QuanAnBanDoState extends State<QuanAnBanDo> {
                     height: 48,
                     child: const QuanAnDiemGoc(kichThuoc: 20),
                   ),
-                for (final c in cacCum) c.length == 1 ? _ghim(c.first) : _cum(c),
+                for (final c in cacCum)
+                  c.length == 1 ? _ghim(c.first) : _cum(c),
               ],
             ),
             const SimpleAttributionWidget(

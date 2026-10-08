@@ -103,8 +103,7 @@ class _ChonDiemGocScreenState extends State<ChonDiemGocScreen> {
     if (g == null) {
       setState(() {
         _dangLayViTri = false;
-        _thongBao =
-            'Không lấy được vị trí (chưa cho phép định vị). Hãy gõ địa chỉ hoặc kéo bản đồ để chọn điểm.';
+        _thongBao = 'Không lấy được vị trí (chưa cho phép định vị). Hãy gõ địa chỉ hoặc kéo bản đồ để chọn điểm.';
       });
       return;
     }

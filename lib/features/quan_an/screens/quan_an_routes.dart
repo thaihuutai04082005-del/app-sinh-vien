@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/dat_ban.dart';
 import '../models/don_mon.dart';
 import '../services/quan_an_dich_vu.dart';
+import '../widgets/quan_an_async.dart';
 import '../widgets/quan_an_states.dart';
 import '../widgets/quan_an_theme.dart';
 import 'admin/hang_cho_admin_screen.dart';
@@ -19,8 +20,10 @@ import 'tuong_tac/chat_screen.dart';
 /// Route của module Quán ăn: bọc màn hình trong giao diện riêng (mục 3.19) để mọi
 /// màn hình mở từ module đều xanh biển – trắng, không đổi theme của phần còn lại.
 Route<T> quanAnRoute<T>(WidgetBuilder builder) => MaterialPageRoute<T>(
-  builder: (context) =>
-      Theme(data: QuanAnTheme.data(), child: Builder(builder: builder)),
+  builder: (context) => Theme(
+    data: QuanAnTheme.data(),
+    child: Builder(builder: builder),
+  ),
 );
 
 /// Điều hướng giữa các màn hình của module.

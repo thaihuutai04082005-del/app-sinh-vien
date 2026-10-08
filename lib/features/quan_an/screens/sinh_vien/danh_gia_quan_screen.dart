@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../models/danh_gia.dart';
-import '../../models/quan_an.dart';
 import '../../models/quan_an_config.dart';
 import '../../services/quan_an_dich_vu.dart';
 import '../../widgets/quan_an_async.dart';
@@ -45,6 +44,7 @@ class _DanhGiaQuanScreenState extends State<DanhGiaQuanScreen> {
   final _nhanXet = TextEditingController();
   List<String> _anh = const [];
   QuanAnConfig _cfg = const QuanAnConfig();
+  late Stream<DanhGia?> _cuaToi = widget.dv.danhGia.cuaToi(widget.quanId);
   late String _tenQuan = widget.tenQuan;
   bool _laChuQuan = false;
   bool _daNap = false;
@@ -136,9 +136,7 @@ class _DanhGiaQuanScreenState extends State<DanhGiaQuanScreen> {
                   ),
                   onPressed: () => setState(() => _diem[ma] = i),
                   icon: Icon(
-                    diem >= i
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
+                    diem >= i ? Icons.star_rounded : Icons.star_border_rounded,
                     size: 32,
                     color: QuanAnColors.primary,
                   ),
@@ -155,7 +153,9 @@ class _DanhGiaQuanScreenState extends State<DanhGiaQuanScreen> {
     final tong = tinhDiemTong(_diem);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_tenQuan.isEmpty ? 'Đánh giá quán' : 'Đánh giá · $_tenQuan'),
+        title: Text(
+          _tenQuan.isEmpty ? 'Đánh giá quán' : 'Đánh giá · $_tenQuan',
+        ),
       ),
       body: widget.dv.uid.isEmpty
           ? const QuanAnEmptyState(
@@ -168,9 +168,23 @@ class _DanhGiaQuanScreenState extends State<DanhGiaQuanScreen> {
               title: 'Chủ quán không đánh giá quán của mình',
               message: 'Bạn có thể trả lời công khai các đánh giá của khách.',
             )
-          : QuanAnStream<DanhGia?>(
-              stream: () => widget.dv.danhGia.cuaToi(widget.quanId),
-              builder: (context, cu) {
+          : StreamBuilder<DanhGia?>(
+              stream: _cuaToi,
+              builder: (context, snap) {
+                if (snap.hasError) {
+                  return QuanAnErrorState(
+                    message: 'Không tải được đánh giá của bạn',
+                    onRetry: () => setState(
+                      () => _cuaToi = widget.dv.danhGia.cuaToi(widget.quanId),
+                    ),
+                  );
+                }
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const SingleChildScrollView(
+                    child: QuanAnSkeletonList(count: 1),
+                  );
+                }
+                final cu = snap.data;
                 _nap(cu);
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(QuanAnSpacing.screen),
@@ -182,7 +196,9 @@ class _DanhGiaQuanScreenState extends State<DanhGiaQuanScreen> {
                         children: [
                           if (cu != null)
                             const Padding(
-                              padding: EdgeInsets.only(bottom: QuanAnSpacing.md),
+                              padding: EdgeInsets.only(
+                                bottom: QuanAnSpacing.md,
+                              ),
                               child: Text(
                                 'Bạn đang cập nhật đánh giá đã viết.',
                                 style: QuanAnText.bodySmall,

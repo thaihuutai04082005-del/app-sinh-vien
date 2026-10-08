@@ -53,10 +53,7 @@ class DiemDanhGiaBox extends StatelessWidget {
               ),
             )
           else
-            const Text(
-              'Chưa có đánh giá xác minh',
-              style: QuanAnText.h3,
-            ),
+            const Text('Chưa có đánh giá xác minh', style: QuanAnText.h3),
           if (sl.diemTieuChi.isNotEmpty) ...[
             const SizedBox(height: QuanAnSpacing.md),
             Wrap(

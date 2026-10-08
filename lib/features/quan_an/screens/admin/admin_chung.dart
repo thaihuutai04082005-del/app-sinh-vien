@@ -18,6 +18,8 @@ class AdminNoiDung extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.topCenter,
+    // Cao đúng bằng nội dung (không chiếm hết chiều cao khi đặt trong thanh dưới).
+    heightFactor: 1,
     child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: adminRongToiDa),
       child: child,

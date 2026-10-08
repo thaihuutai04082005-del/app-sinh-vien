@@ -23,7 +23,7 @@ admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT || 'app-sinh-vien-b6
     process.exit(1);
   }
   for (const u of chon) {
-    await admin.firestore().collection('admins').doc(u.uid).set({ tro: true, danhTinh: true });
+    await admin.firestore().collection('admins').doc(u.uid).set({ tro: true, danhTinh: true, quanAn: true });
     console.log(`Đã cấp admin cho ${u.email} (uid ${u.uid})`);
   }
   process.exit(0);

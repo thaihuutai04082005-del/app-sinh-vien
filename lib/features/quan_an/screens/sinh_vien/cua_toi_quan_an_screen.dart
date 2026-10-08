@@ -11,6 +11,7 @@ import '../../models/khang_nghi.dart';
 import '../../models/quan_an.dart';
 import '../../models/quan_an_config.dart';
 import '../../models/quan_an_filter.dart';
+import '../../services/don_mon_service.dart' show ThongTinSinhVien;
 import '../../services/quan_an_bo_nho.dart';
 import '../../services/quan_an_dich_vu.dart';
 import '../../widgets/quan_an_async.dart';
@@ -123,7 +124,8 @@ class _CuaToiQuanAnScreenState extends State<CuaToiQuanAnScreen> {
                                   'Đăng quán, menu, đơn hàng, đặt bàn, khuyến mãi, ví',
                                 ),
                                 trailing: const Icon(Icons.chevron_right),
-                                onTap: () => QuanAnDieuHuong.quanLy(context, dv),
+                                onTap: () =>
+                                    QuanAnDieuHuong.quanLy(context, dv),
                               ),
                               const Divider(),
                               ListTile(
@@ -159,7 +161,9 @@ class _CuaToiQuanAnScreenState extends State<CuaToiQuanAnScreen> {
                                   color: QuanAnColors.primary,
                                 ),
                                 title: const Text('Admin Quán ăn'),
-                                subtitle: const Text('Hàng chờ, báo cáo, kháng nghị'),
+                                subtitle: const Text(
+                                  'Hàng chờ, báo cáo, kháng nghị',
+                                ),
                                 trailing: const Icon(Icons.chevron_right),
                                 onTap: () => QuanAnDieuHuong.admin(context, dv),
                               ),
@@ -191,12 +195,7 @@ class _TieuDeMuc extends StatelessWidget {
 /// Một mục trong danh sách (đơn, bàn, check-in, quán): thẻ bấm được, không dùng ListTile
 /// để chữ dài và huy hiệu tự xuống dòng thay vì tràn ngang.
 class _MucThe extends StatelessWidget {
-  const _MucThe({
-    required this.tieuDe,
-    this.dongPhu,
-    this.badge,
-    this.onTap,
-  });
+  const _MucThe({required this.tieuDe, this.dongPhu, this.badge, this.onTap});
 
   final String tieuDe;
   final String? dongPhu;
@@ -228,9 +227,7 @@ class _MucThe extends StatelessWidget {
                         ),
                       if (badge != null)
                         Padding(
-                          padding: const EdgeInsets.only(
-                            top: QuanAnSpacing.xs,
-                          ),
+                          padding: const EdgeInsets.only(top: QuanAnSpacing.xs),
                           child: badge,
                         ),
                     ],
@@ -299,9 +296,7 @@ class _TaiKhoan extends StatelessWidget {
                 : 'Chưa xác thực số điện thoại',
           ),
           subtitle: Text(
-            xt.daOtp
-                ? 'Đã xác thực OTP'
-                : 'Cần để đặt món, đặt bàn, đánh giá có nhãn và báo cáo được tính',
+            xt.daOtp ? 'Đã xác thực OTP' : 'Cần để đặt món, đặt bàn, đánh giá có nhãn và báo cáo được tính',
           ),
           trailing: TextButton(
             onPressed: () => QuanAnDieuHuong.mo(
@@ -373,7 +368,8 @@ class _DonCuaToi extends StatelessWidget {
     builder: (context, ds) {
       final sx = [...ds]
         ..sort(
-          (a, b) => (b.taoLuc ?? DateTime(0)).compareTo(a.taoLuc ?? DateTime(0)),
+          (a, b) =>
+              (b.taoLuc ?? DateTime(0)).compareTo(a.taoLuc ?? DateTime(0)),
         );
       final dangLam = sx.where((d) => d.dangDienRa).toList();
       final daXong = sx.where((d) => !d.dangDienRa).toList();
@@ -382,7 +378,10 @@ class _DonCuaToi extends StatelessWidget {
         children: [
           const _TieuDeMuc('Đơn đang làm'),
           if (dangLam.isEmpty)
-            const Text('Không có đơn nào đang làm.', style: QuanAnText.bodySmall)
+            const Text(
+              'Không có đơn nào đang làm.',
+              style: QuanAnText.bodySmall,
+            )
           else
             for (final d in dangLam) _the(context, d),
           const SizedBox(height: QuanAnSpacing.lg),
@@ -390,10 +389,7 @@ class _DonCuaToi extends StatelessWidget {
           if (daXong.isEmpty)
             const Text('Chưa có đơn nào đã xong.', style: QuanAnText.bodySmall)
           else
-            _DanhSachRutGon<DonMon>(
-              muc: daXong,
-              dung: (d) => _the(context, d),
-            ),
+            _DanhSachRutGon<DonMon>(muc: daXong, dung: (d) => _the(context, d)),
         ],
       );
     },

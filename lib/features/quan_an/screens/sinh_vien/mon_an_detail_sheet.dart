@@ -255,7 +255,9 @@ class _MonAnSheetState extends State<_MonAnSheet> {
                 const SizedBox(height: QuanAnSpacing.sm),
                 Row(
                   children: [
-                    const Expanded(child: Text('Số lượng', style: QuanAnText.h3)),
+                    const Expanded(
+                      child: Text('Số lượng', style: QuanAnText.h3),
+                    ),
                     IconButton.outlined(
                       tooltip: 'Bớt một phần',
                       onPressed: _soLuong > 1

@@ -151,8 +151,9 @@ class _QuanAnBoLocSheetState extends State<QuanAnBoLocSheet> {
                         FilterChip(
                           label: Text(e.value),
                           selected: _f.loaiMon.contains(e.key),
-                          onSelected: (on) =>
-                              _set(_f.copyWith(loaiMon: _bat(_f.loaiMon, e.key, on))),
+                          onSelected: (on) => _set(
+                            _f.copyWith(loaiMon: _bat(_f.loaiMon, e.key, on)),
+                          ),
                         ),
                   ],
                 ),

@@ -87,6 +87,7 @@ class DoanhThuScreen extends StatefulWidget {
 
 class _DoanhThuScreenState extends State<DoanhThuScreen> {
   bool _theoTuan = false;
+  late final Stream<ViChuQuan> _vi = widget.dv.donMon.vi(widget.dv.uid);
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -121,7 +122,7 @@ class _DoanhThuScreenState extends State<DoanhThuScreen> {
                 _TomTat(
                   homNay: tim(ngay, homNay),
                   tuanNay: tim(tuan, tuanNay),
-                  vi: widget.dv.donMon.vi(widget.dv.uid),
+                  vi: _vi,
                 ),
                 const SizedBox(height: QuanAnSpacing.md),
                 const HopThongBao(

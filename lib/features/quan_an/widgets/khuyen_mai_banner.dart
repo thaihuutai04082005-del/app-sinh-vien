@@ -14,7 +14,9 @@ class KhuyenMaiBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final km = khuyenMai;
-    final han = km.ketThuc == null ? null : 'Đến hết ${formatNgay(km.ketThuc!)}';
+    final han = km.ketThuc == null
+        ? null
+        : 'Đến hết ${formatNgay(km.ketThuc!)}';
     return Semantics(
       label: 'Khuyến mãi ${km.tieuDe}',
       child: Container(
