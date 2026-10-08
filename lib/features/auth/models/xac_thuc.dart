@@ -43,13 +43,21 @@ class XacThuc {
 
 /// Quyền admin — collection `admins/{uid}`, tạo trong Firebase Console.
 class QuyenAdmin {
-  const QuyenAdmin({this.tro = false, this.danhTinh = false});
+  const QuyenAdmin({
+    this.tro = false,
+    this.quanAn = false,
+    this.danhTinh = false,
+  });
 
   final bool tro;
+
+  /// Admin của module Quán ăn (`admins/{uid}.quanAn`).
+  final bool quanAn;
   final bool danhTinh;
 
   factory QuyenAdmin.fromMap(Map<String, dynamic>? m) => QuyenAdmin(
     tro: m?['tro'] as bool? ?? false,
+    quanAn: m?['quanAn'] as bool? ?? false,
     danhTinh: m?['danhTinh'] as bool? ?? false,
   );
 }
