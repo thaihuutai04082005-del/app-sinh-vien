@@ -19,17 +19,19 @@ async function quyetDon(adminUid, { donId, loai = 'ADMIN_QUYET', quyetDinh, soTi
 }
 
 /** Khóa một chức năng của người dùng trong Quán ăn: 'dat_mon' | 'dat_ban' | 'tien_mat' | 'bao_cao' | 'dat_mon_app'. */
-async function khoaChucNang(adminUid, { uid, chucNang, lyDo }) {
+async function khoaChucNang(adminUid, { uid, sdt, chucNang, den, lyDo }) {
   const cfg = await layCauHinh();
   const truong = {
     dat_mon: ['khoaDatMonDen', 'khoaDatMonPhut'], dat_ban: ['khoaDatBanDen', 'khoaDatBanPhut'], tien_mat: ['khoaTienMatDen', 'khoaDatMonPhut'],
     bao_cao: ['khoaBaoCaoDen', 'khoaBaoCaoPhut'], dat_mon_app: ['khoaDatMonAppDen', 'khoaDatMonAppPhut'],
   }[chucNang];
   if (!truong) throw thamSoSai();
-  const xt = await db.collection('xac_thuc').doc(uid).get();
-  const khoa = (xt.exists && xt.get('sdt')) || uid;
-  await db.collection(COL.khoa).doc(khoa).set({ [truong[0]]: Timestamp.fromMillis(Date.now() + cfg[truong[1]] * PHUT) }, { merge: true });
-  await ghiNhatKy(adminUid, `khoa_${chucNang}`, { loai: 'nguoi_dung', id: uid }, lyDo || '');
+  if (!uid && !sdt) throw thamSoSai();
+  const xt = uid ? await db.collection('xac_thuc').doc(uid).get() : null;
+  const khoa = sdt || (xt && xt.exists && xt.get('sdt')) || uid;
+  const hetLuc = Number.isFinite(den) && den > Date.now() ? den : Date.now() + cfg[truong[1]] * PHUT;
+  await db.collection(COL.khoa).doc(khoa).set({ [truong[0]]: Timestamp.fromMillis(hetLuc) }, { merge: true });
+  await ghiNhatKy(adminUid, `khoa_${chucNang}`, { loai: 'nguoi_dung', id: uid || sdt }, lyDo || '');
   return { ok: true };
 }
 

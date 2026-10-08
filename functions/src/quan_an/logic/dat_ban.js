@@ -154,7 +154,7 @@ function xuLyHan(dGoc, now, cfg) {
     d.ketThucLuc = now;
     const r = rong(d);
     r.thongBao.push({ toi: 'sv', loai: 'ban_het_han' });
-    tacDong.push({ ...r, d: undefined, khoa: 'HET_HAN_XAC_NHAN' });
+    tacDong.push({ ...r, d: undefined, khoa: 'HET_HAN_XAC_NHAN', status: d.status });
   } else if (d.status === S.daXacNhan) {
     if (now >= d.gio - p(cfg, 'nhacDatBanPhut') && now < d.gio && !d.daXuLy.nhac) {
       d.daXuLy.nhac = true;
@@ -168,7 +168,7 @@ function xuLyHan(dGoc, now, cfg) {
       d.status = S.daDen;
       d.ghiNhanDen = 'tu_dong';
       d.ketThucLuc = now;
-      tacDong.push({ ...rong(d), d: undefined, khoa: 'TU_DONG_DONG' });
+      tacDong.push({ ...rong(d), d: undefined, khoa: 'TU_DONG_DONG', status: d.status });
     }
   }
   return { d, tacDong };

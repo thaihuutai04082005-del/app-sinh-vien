@@ -5,7 +5,7 @@
  * nhắc "quán còn hoạt động", số liệu tự tính (mục 3.2, 3.3, 3.5f, 3.14). Chủ quán chỉ ghi trực tiếp BẢN NHÁP.
  */
 
-const { db, FieldValue, Timestamp, GeoPoint, ms, ts } = require('../chung/firebase');
+const { db, Timestamp, GeoPoint, ms, ts } = require('../chung/firebase');
 const { loiNguoiDung, khongTimThay, khongCoQuyen, thamSoSai } = require('../chung/loi');
 const { canOtp, canDanhTinh } = require('../chung/tai_khoan');
 const { layCauHinh } = require('./cau_hinh');
@@ -14,8 +14,7 @@ const K = require('./logic/kiem_tra');
 const G = require('./logic/gia');
 const H = require('./logic/gio_mo_cua');
 const HA = require('./logic/hay_an');
-const DG = require('./logic/danh_gia');
-const { COL, ghiNhatKy, thongBao, cacAdminQuanAn, kiemTraKhoaBan, hetNgayVn } = require('./ho_tro');
+const { COL, ghiNhatKy, thongBao, cacAdminQuanAn, kiemTraKhoaBan } = require('./ho_tro');
 
 // ---------------------------------------------------------------- Đọc
 
@@ -33,8 +32,6 @@ async function layQuanCuaChu(uid, quanId) {
 }
 
 const toLatLng = (gp) => (gp ? { lat: gp.latitude, lng: gp.longitude } : null);
-
-const GIA_TRI_TRANG_THAI_HIEN = ['active'];
 
 // ---------------------------------------------------------------- Số liệu tự tính
 
@@ -439,7 +436,16 @@ async function adminDinhChi(adminUid, { quanId, dinhChi, lyDo = '' }) {
 }
 
 /** Khóa bán vĩnh viễn: khóa đăng quán và nhận đơn trong Quán ăn, KHÔNG khóa cả tài khoản (mục 3.14). */
-async function adminKhoaBan(adminUid, { chuQuanId, lyDo }) {
+/** Chủ quán từ `chuQuanId` hoặc từ một `quanId` (app admin gửi quanId). */
+async function chuTu({ chuQuanId, quanId }) {
+  if (chuQuanId) return chuQuanId;
+  const s = await db.collection(COL.quan).doc(String(quanId || '')).get();
+  if (!s.exists) throw khongTimThay('Quán');
+  return s.get('chuQuanId');
+}
+
+async function adminKhoaBan(adminUid, { chuQuanId: chuTruyen, quanId, lyDo }) {
+  const chuQuanId = await chuTu({ chuQuanId: chuTruyen, quanId });
   if (String(lyDo || '').trim().length < 3) throw thamSoSai('Ghi lý do.');
   const quan = await db.collection(COL.quan).where('chuQuanId', '==', chuQuanId).get();
   for (const d of quan.docs) await d.ref.update({ khoaBan: true, trangThai: ['draft', 'rejected', 'pending_review'].includes(d.get('trangThai')) ? d.get('trangThai') : 'suspended', anBoi: 'admin', anLuc: Timestamp.now() });
@@ -454,7 +460,8 @@ async function adminKhoaBan(adminUid, { chuQuanId, lyDo }) {
  * (đơn chờ xác nhận được hoàn; đơn đã nhận gắn cờ rà soát), bàn đã xác nhận bị hủy không tính lỗi sinh viên,
  * gửi đề nghị khóa cả tài khoản tới admin danh tính (mục 4.4).
  */
-async function adminLuaDao(adminUid, { chuQuanId, lyDo }) {
+async function adminLuaDao(adminUid, { chuQuanId: chuTruyen, quanId, lyDo }) {
+  const chuQuanId = await chuTu({ chuQuanId: chuTruyen, quanId });
   if (String(lyDo || '').trim().length < 3) throw thamSoSai('Ghi lý do.');
   const { chayTrenDon } = require('./don_mon_service');
   const quan = await db.collection(COL.quan).where('chuQuanId', '==', chuQuanId).get();
@@ -535,8 +542,8 @@ async function tinhHangDem(now = Date.now()) {
 }
 
 module.exports = {
-  GIA_TRI_TRANG_THAI_HIEN, docGiayTo, layQuanCuaChu, capNhatSoLieuQuan, capNhatChiSoQuan,
+  docGiayTo, layQuanCuaChu, capNhatSoLieuQuan, capNhatChiSoQuan,
   guiDuyetQuan, adminDuyet, suaQuan, nangCapLoaiQuan, caiDatDatMon, tamNghi, tamNgungNhanDon, anHienQuan,
   ngungKinhDoanh, xacNhanConHoatDong, baoNguoiDaLuu, adminYeuCauChuyenLoai, adminBoCoKhaiSai, adminAnHien, adminDinhChi,
-  adminKhoaBan, adminLuaDao, xuLyHetHanQuan, tinhHangDem, apHeQuaNgungNhan, giaoDichDangChay, DG, FieldValue, hetNgayVn,
+  adminKhoaBan, adminLuaDao, xuLyHetHanQuan, tinhHangDem, apHeQuaNgungNhan, giaoDichDangChay,
 };

@@ -561,7 +561,7 @@ function xuLyHan(dGoc, now, cfg, { congDaThu = null } = {}) {
   const S = TT;
   const dua = (kq, khoa, laNhac = false) => {
     d = kq.d;
-    tacDong.push({ ...kq, d: undefined, khoa, laNhac: laNhac || kq.laNhac });
+    tacDong.push({ ...kq, d: undefined, khoa, laNhac: laNhac || kq.laNhac, status: d.status });
   };
 
   for (let vong = 0; vong < 10; vong++) {

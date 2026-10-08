@@ -134,7 +134,7 @@ async function chayTrenDon(donId, { su = null, nguoiLam = { vaiTro: 'he_thong' }
         if (r.loi) loiSuKien = r.loi;
         else {
           d = r.d;
-          if (!r.boQua) cacTacDong.push({ ...r, d: undefined, khoa: `${su.loai}_${(goc.version || 0) + 1}` });
+          if (!r.boQua) cacTacDong.push({ ...r, d: undefined, khoa: `${su.loai}_${(goc.version || 0) + 1}`, status: r.d.status });
         }
       }
     }
@@ -142,10 +142,9 @@ async function chayTrenDon(donId, { su = null, nguoiLam = { vaiTro: 'he_thong' }
 
     // ---- Ghi ----
     const capNhat = { ...raDoc(d), capNhatLuc: Timestamp.fromMillis(now) };
-    if (su && su.loai === 'QUAN_KHONG_NHAN' && !loiSuKien && su.anh) capNhat['khongNhan.anh'] = su.anh;
     if (su && su.loai === 'QUAN_DA_GIAO' && !loiSuKien && d.anhGiao && su.anh) capNhat.anhGiao = { ...d.anhGiao, url: su.anh, lat: su.lat, lng: su.lng };
     if (su && su.loai === 'QUAN_NHAP_MA' && !loiSuKien && d.bangChungLuc) capNhat.maNhanMonDaNhapLuc = Timestamp.fromMillis(now);
-    const lich = cacTacDong.filter((t) => !t.laNhac).map((t) => ({ luc: Timestamp.fromMillis(now), su: t.khoa, nguoiLam: su && t.khoa.startsWith(su.loai) ? nguoiLam.vaiTro : 'he_thong' }));
+    const lich = cacTacDong.filter((t) => !t.laNhac).map((t) => ({ luc: Timestamp.fromMillis(now), su: t.khoa, status: t.status || d.status, nguoiLam: su && t.khoa.startsWith(su.loai) ? nguoiLam.vaiTro : 'he_thong' }));
     if (lich.length) capNhat.lichSu = FieldValue.arrayUnion(...lich);
 
     const caiDat = { sv: (hoSoSv.exists && hoSoSv.get('caiDatThongBao')) || {}, chu: (hoSoChu.exists && hoSoChu.get('caiDatThongBao')) || {} };
@@ -417,11 +416,13 @@ async function datMon(nd, tham) {
     }
     if (cachTra === 'tien_mat') {
       if (!r.dm.tienMat) return loiBaoGia('khong_tien_mat', 'Quán này không nhận tiền mặt khi nhận hàng.');
+      if (conKhoa(khoa, 'khoaTienMatDen', now)) return loiBaoGia('mat_tien_mat', 'Bạn đang bị khóa chọn tiền mặt khi nhận hàng.');
       if (r.tong >= cfg.tienMatToiDa) return loiBaoGia('tien_mat_qua_han_muc', `Tiền mặt chỉ cho đơn dưới ${cfg.tienMatToiDa.toLocaleString('vi-VN')}đ.`);
       const bom = await tx.get(db.collection(COL.viPham).where('sdt', '==', sdt).where('vaiTro', '==', 'sv'));
       const lan = bom.docs.filter((x) => x.get('loai') === 'bom_hang').map((x) => ({ luc: ms(x.get('luc')), daGo: x.get('daGo') }));
       if (V.demTrongCuaSo(lan, now, cfg.bomHangCuaSoPhut) >= cfg.bomHangMatTienMatSoLan) return loiBaoGia('mat_tien_mat', 'Bạn đã bị tính bom hàng nhiều lần nên không chọn được tiền mặt.');
     }
+    const hs = await tx.get(db.collection(COL.hoSo).doc(r.quan.chuQuanId)); // đọc hết trước khi ghi
     const refDon = db.collection(COL.don).doc();
     const d = L.taoDon({ now, cachNhan: r.cachNhan, cachTra, gio: r.gio, gioHen: r.gioHen, tong: r.tong }, cfg);
     const ma = String(crypto.randomInt(0, 10000)).padStart(4, '0');
@@ -443,7 +444,6 @@ async function datMon(nd, tham) {
       tx.set(db.collection(COL.cong).doc(refDon.id), { donId: refDon.id, nguoiTra: uid, soTien: r.tong, trangThai: 'cho', taoLuc: Timestamp.fromMillis(now) });
     } else {
       // Tiền mặt: đơn tới quán ngay, không có khoản tiền qua app.
-      const hs = await tx.get(db.collection(COL.hoSo).doc(r.quan.chuQuanId));
       const id = ghiThongBao(tx, { khoa: `${refDon.id}_TAO_don_moi`, nguoiNhan: r.quan.chuQuanId, loai: 'don_moi', bien: { quan: r.quan.ten }, moTrang: { loai: 'don', id: refDon.id }, caiDat: (hs.exists && hs.get('caiDatThongBao')) || {} });
       if (id) dsThongBao.push(id);
       tx.update(db.collection(COL.quan).doc(r.quanId), { hoatDongLuc: Timestamp.fromMillis(now), hanXacNhanHoatDong: null });

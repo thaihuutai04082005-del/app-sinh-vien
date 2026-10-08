@@ -80,7 +80,7 @@ async function chayTrenBan(banId, { su = null, nguoiLam = { vaiTro: 'he_thong' }
       else {
         d = r.d;
         if (!r.boQua) {
-          tacDong.push({ ...r, d: undefined, khoa: `${su.loai}_${(goc.version || 0) + 1}` });
+          tacDong.push({ ...r, d: undefined, khoa: `${su.loai}_${(goc.version || 0) + 1}`, status: r.d.status });
           if (su.loai === 'SV_CHECK_IN') daCheckIn = true;
         }
       }
@@ -89,7 +89,7 @@ async function chayTrenBan(banId, { su = null, nguoiLam = { vaiTro: 'he_thong' }
 
     const capNhat = { ...raDoc(d, cfg), capNhatLuc: Timestamp.fromMillis(now) };
     if (su && su.checkInId && daCheckIn) capNhat.checkInId = su.checkInId;
-    const lich = tacDong.filter((t) => !t.laNhac).map((t) => ({ luc: Timestamp.fromMillis(now), su: t.khoa, nguoiLam: su && t.khoa.startsWith(su.loai) ? nguoiLam.vaiTro : 'he_thong' }));
+    const lich = tacDong.filter((t) => !t.laNhac).map((t) => ({ luc: Timestamp.fromMillis(now), su: t.khoa, status: t.status || d.status, nguoiLam: su && t.khoa.startsWith(su.loai) ? nguoiLam.vaiTro : 'he_thong' }));
     if (lich.length) capNhat.lichSu = FieldValue.arrayUnion(...lich);
 
     const caiDat = { sv: (hoSoSv.exists && hoSoSv.get('caiDatThongBao')) || {}, chu: (hoSoChu.exists && hoSoChu.get('caiDatThongBao')) || {} };
