@@ -20,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmCtrl = TextEditingController();
   late final AuthService _auth = widget.authService ?? AuthService();
   bool _loading = false;
+  bool _showPassword = false;
   String? _error;
 
   @override
@@ -82,6 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     TextFormField(
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
                       decoration: const InputDecoration(
                         labelText: 'Email',
                         border: OutlineInputBorder(),
@@ -96,10 +98,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordCtrl,
-                      obscureText: true,
-                      decoration: const InputDecoration(
+                      obscureText: !_showPassword,
+                      // new-password: trình duyệt không tự điền mật khẩu đã
+                      // lưu vào ô tạo mật khẩu mới.
+                      autofillHints: const [AutofillHints.newPassword],
+                      decoration: InputDecoration(
                         labelText: 'Mật khẩu',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          tooltip: _showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu',
+                          icon: Icon(
+                            _showPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () =>
+                              setState(() => _showPassword = !_showPassword),
+                        ),
                       ),
                       validator: (v) => (v == null || v.length < 6)
                           ? 'Mật khẩu tối thiểu 6 ký tự'
@@ -108,7 +123,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _confirmCtrl,
-                      obscureText: true,
+                      obscureText: !_showPassword,
+                      autofillHints: const [AutofillHints.newPassword],
                       decoration: const InputDecoration(
                         labelText: 'Nhập lại mật khẩu',
                         border: OutlineInputBorder(),

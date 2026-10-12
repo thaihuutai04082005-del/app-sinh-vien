@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -6,17 +7,30 @@ import '../../../shared/models/app_user.dart';
 
 /// Gọi Firebase Auth + Firestore cho đăng ký / đăng nhập.
 class AuthService {
-  AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
-    : _authOverride = auth,
-      _firestoreOverride = firestore;
+  AuthService({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+    FirebaseFunctions? functions,
+  }) : _authOverride = auth,
+       _firestoreOverride = firestore,
+       _functionsOverride = functions;
 
   final FirebaseAuth? _authOverride;
   final FirebaseFirestore? _firestoreOverride;
+  final FirebaseFunctions? _functionsOverride;
 
   FirebaseAuth get _auth => _authOverride ?? FirebaseAuth.instance;
   FirebaseFirestore get _db => _firestoreOverride ?? FirebaseFirestore.instance;
+  // Cùng region với functions-xac-nhan-email/index.js.
+  FirebaseFunctions get _functions =>
+      _functionsOverride ??
+      FirebaseFunctions.instanceFor(region: 'asia-southeast1');
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// Như [authStateChanges] nhưng phát cả khi hồ sơ user đổi (vd. vừa xác
+  /// nhận email bằng [verifyCode]).
+  Stream<User?> get userChanges => _auth.userChanges();
 
   User? get currentUser => _auth.currentUser;
 
@@ -41,6 +55,29 @@ class AuthService {
             email: email.trim(),
           ).toMap(),
         );
+    try {
+      await sendVerificationCode();
+    } on FirebaseFunctionsException {
+      // Tài khoản đã tạo; người dùng bấm "Gửi lại mã" ở màn xác nhận.
+    }
+  }
+
+  /// Nhờ server gửi mã 6 số tới email của tài khoản đang đăng nhập.
+  Future<void> sendVerificationCode() async {
+    await _functions.httpsCallable('guiMaXacNhan').call<void>();
+  }
+
+  /// Gửi mã người dùng nhập lên server; đúng thì email được xác nhận và
+  /// [userChanges] phát user mới để AuthGate chuyển trang.
+  Future<void> verifyCode(String code) async {
+    await _functions.httpsCallable('xacNhanMa').call<void>({
+      'code': code.trim(),
+    });
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await user.reload();
+    // Làm mới token để claim email_verified có hiệu lực và userChanges phát.
+    await _auth.currentUser?.getIdToken(true);
   }
 
   Future<void> signIn({required String email, required String password}) {
@@ -85,6 +122,19 @@ class AuthService {
 
   /// Đổi mã lỗi Firebase thành câu tiếng Việt cho người dùng.
   static String messageFor(Object error) {
+    if (error is FirebaseFunctionsException) {
+      // Server đã trả câu tiếng Việt cho các lỗi do người dùng.
+      const userErrors = {
+        'invalid-argument',
+        'not-found',
+        'deadline-exceeded',
+        'permission-denied',
+        'resource-exhausted',
+      };
+      if (userErrors.contains(error.code) && error.message != null) {
+        return error.message!;
+      }
+    }
     if (error is FirebaseAuthException) {
       switch (error.code) {
         case 'invalid-email':
@@ -101,6 +151,8 @@ class AuthService {
           return 'Không có kết nối mạng';
         case 'too-many-requests':
           return 'Thử quá nhiều lần, vui lòng đợi một lúc';
+        case 'user-disabled':
+          return 'Tài khoản đã bị khoá';
       }
     }
     return 'Đã có lỗi xảy ra, vui lòng thử lại';

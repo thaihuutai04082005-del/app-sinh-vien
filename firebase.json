@@ -20,6 +20,13 @@
       }
     }
   },
+  "functions": [
+    {
+      "source": "functions-xac-nhan-email",
+      "codebase": "xac-nhan-email",
+      "ignore": ["node_modules", ".git"]
+    }
+  ],
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

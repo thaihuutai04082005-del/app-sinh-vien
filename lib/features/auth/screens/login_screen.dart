@@ -73,6 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
                       decoration: const InputDecoration(
                         labelText: 'Email',
                         border: OutlineInputBorder(),
@@ -88,6 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _passwordCtrl,
                       obscureText: true,
+                      autofillHints: const [AutofillHints.password],
                       decoration: const InputDecoration(
                         labelText: 'Mật khẩu',
                         border: OutlineInputBorder(),

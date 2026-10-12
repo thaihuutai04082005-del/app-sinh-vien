@@ -1,5 +1,7 @@
 import 'package:app_sinh_vien/features/auth/screens/login_screen.dart';
+import 'package:app_sinh_vien/features/auth/screens/verify_email_screen.dart';
 import 'package:app_sinh_vien/features/auth/services/auth_service.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,5 +38,34 @@ void main() {
       AuthService.messageFor(Exception('x')),
       'Đã có lỗi xảy ra, vui lòng thử lại',
     );
+  });
+
+  test('messageFor giữ câu lỗi server trả về cho mã xác nhận', () {
+    expect(
+      AuthService.messageFor(
+        FirebaseFunctionsException(
+          code: 'invalid-argument',
+          message: 'Mã không đúng',
+        ),
+      ),
+      'Mã không đúng',
+    );
+    expect(
+      AuthService.messageFor(
+        FirebaseFunctionsException(code: 'internal', message: 'INTERNAL'),
+      ),
+      'Đã có lỗi xảy ra, vui lòng thử lại',
+    );
+  });
+
+  testWidgets('Màn xác nhận báo lỗi khi mã chưa đủ 6 số', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: VerifyEmailScreen(authService: AuthService())),
+    );
+    await tester.enterText(find.byType(TextField), '12a3');
+    expect(find.text('123'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Xác nhận'));
+    await tester.pump();
+    expect(find.text('Mã gồm 6 chữ số'), findsOneWidget);
   });
 }
