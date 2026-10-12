@@ -8,7 +8,8 @@ Thiết kế và xây dựng app kết nối sinh viên với các nhà cung c�
 - Đăng ký / đăng nhập (Firebase Auth), hồ sơ cá nhân, thanh điều hướng.
 - Shop quần áo và Xe dọn trọ: đăng tin, xem chi tiết, upload ảnh/video, hạn mức chống spam.
 - Vui chơi: đã có danh sách, lọc danh mục, đăng địa điểm mới (dán link ảnh hoặc upload ảnh).
-- Tìm trọ, Quán ăn: đang phát triển.
+- Tìm trọ: đã làm đủ theo đặc tả (đăng nhà trọ / phòng, lọc + bản đồ, đặt cọc qua cổng giả lập, nhận phòng, khiếu nại, chat, đánh giá, báo cáo, admin). Xem `docs/ke-hoach-tim-tro-quan-an.md` để biết cách chạy thử và deploy.
+- Quán ăn: đã làm xong theo mục 3 của đặc tả (đặt bàn, đặt món, check-in, đánh giá, chat, admin); xem `docs/ke-hoach-tim-tro-quan-an.md`.
 
 ## Chạy thử
 ```

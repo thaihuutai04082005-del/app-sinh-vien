@@ -16,13 +16,6 @@ void main() {
     }
   });
 
-  testWidgets('Module chưa làm báo "sẽ sớm ra mắt"', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
-    await tester.tap(find.text('Quán ăn'));
-    await tester.pump();
-    expect(find.text('Quán ăn sẽ sớm ra mắt'), findsOneWidget);
-  });
-
   testWidgets('Ô tìm kiếm lọc module theo tên', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
     await tester.enterText(find.byType(TextField), 'shop');

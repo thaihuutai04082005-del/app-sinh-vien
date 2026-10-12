@@ -1,124 +1,251 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Loại phòng để lọc ở mục 3.1 (ở ghép / ở riêng). Lưu trong Firestore dạng chữ.
-enum RoomType {
-  oRieng('o_rieng', 'Phòng riêng'),
-  oGhep('o_ghep', 'Ở ghép'),
-  studio('studio', 'Studio');
+import 'nha_tro.dart';
 
-  const RoomType(this.value, this.label);
+/// Tiền điện / nước: cách tính + giá.
+class ChiPhi {
+  const ChiPhi({required this.cach, required this.gia});
 
-  final String value;
-  final String label;
+  final String cach;
+  final num gia;
 
-  static RoomType fromValue(String? value) => RoomType.values.firstWhere(
-    (type) => type.value == value,
-    orElse: () => RoomType.oRieng,
-  );
+  static ChiPhi? fromMap(Object? m) => m is Map
+      ? ChiPhi(cach: m['cach'] as String? ?? '', gia: m['gia'] as num? ?? 0)
+      : null;
+
+  Map<String, dynamic> toMap() => {'cach': cach, 'gia': gia};
 }
 
-/// Phòng trọ — collection `phong_tro` (mục 7.3). Tên field khớp bảng trong tài liệu.
-class PhongTro {
-  const PhongTro({
+class PhiKhac {
+  const PhiKhac({required this.ten, required this.gia});
+
+  final String ten;
+  final num gia;
+
+  Map<String, dynamic> toMap() => {'ten': ten, 'gia': gia};
+}
+
+/// Thông tin nhà trọ được chép sang phòng để lọc nhanh ở sảnh (mục 2.17).
+class NhaTroRutGon {
+  const NhaTroRutGon({
     required this.id,
-    required this.ownerId,
-    required this.title,
-    required this.price,
-    required this.address,
-    this.ownerVerified = false,
-    this.images = const [],
-    this.electricPrice = 0,
-    this.waterPrice = 0,
-    this.area = 0,
-    this.maxPeople = 1,
-    this.amenities = const [],
-    this.lifestylePrefs = const [],
-    this.depositEnabled = false,
-    this.location,
-    this.status = 'available',
-    this.roomType = RoomType.oRieng,
-    this.createdAt,
+    this.trangThai = 'draft',
+    this.ten = '',
+    this.loaiHinh = 'phong',
+    this.tienIchChung = const [],
+    this.noiQuy,
+    this.viTri,
+    this.diaChi = '',
+    this.phuong = '',
+    this.searchText = '',
+    this.anhBia = '',
+    this.daXacThucNha = false,
   });
 
   final String id;
-  final String ownerId;
-  final bool ownerVerified;
-  final String title;
-  final List<String> images;
-  final num price;
-  final num electricPrice;
-  final num waterPrice;
-  final double area;
-  final int maxPeople;
-  final List<String> amenities;
-  final List<String> lifestylePrefs;
-  final bool depositEnabled;
-  final GeoPoint? location;
-  final String address;
+  final String trangThai;
+  final String ten;
+  final String loaiHinh;
+  final List<String> tienIchChung;
+  final NoiQuy? noiQuy;
+  final GeoPoint? viTri;
+  final String diaChi;
+  final String phuong;
+  final String searchText;
+  final String anhBia;
+  final bool daXacThucNha;
 
-  /// "available" | "rented" | "hidden"
-  final String status;
-
-  /// Không có trong bảng 7.3 nhưng cần cho bộ lọc ở mục 3.1.
-  final RoomType roomType;
-  final DateTime? createdAt;
-
-  factory PhongTro.fromMap(String id, Map<String, dynamic> map) => PhongTro(
-    id: id,
-    ownerId: map['ownerId'] as String? ?? '',
-    ownerVerified: map['ownerVerified'] as bool? ?? false,
-    title: map['title'] as String? ?? '',
-    images: List<String>.from(map['images'] as List? ?? const []),
-    price: map['price'] as num? ?? 0,
-    electricPrice: map['electricPrice'] as num? ?? 0,
-    waterPrice: map['waterPrice'] as num? ?? 0,
-    area: (map['area'] as num? ?? 0).toDouble(),
-    maxPeople: (map['maxPeople'] as num? ?? 1).toInt(),
-    amenities: List<String>.from(map['amenities'] as List? ?? const []),
-    lifestylePrefs: List<String>.from(
-      map['lifestylePrefs'] as List? ?? const [],
-    ),
-    depositEnabled: map['depositEnabled'] as bool? ?? false,
-    location: map['location'] as GeoPoint?,
-    address: map['address'] as String? ?? '',
-    status: map['status'] as String? ?? 'available',
-    roomType: RoomType.fromValue(map['roomType'] as String?),
-    createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-  );
-
-  /// Dữ liệu ghi lên Firestore khi đăng tin. `ownerId` và `createdAt` do
-  /// `DailyQuota.createPost` gán; tin mới luôn chưa xác thực và còn trống.
-  Map<String, dynamic> toMap() => {
-    'ownerVerified': false,
-    'title': title,
-    'images': images,
-    'price': price,
-    'electricPrice': electricPrice,
-    'waterPrice': waterPrice,
-    'area': area,
-    'maxPeople': maxPeople,
-    'amenities': amenities,
-    'lifestylePrefs': lifestylePrefs,
-    'depositEnabled': depositEnabled,
-    'location': location,
-    'address': address,
-    'status': 'available',
-    'roomType': roomType.value,
-  };
+  static NhaTroRutGon? fromMap(Object? m) {
+    if (m is! Map) return null;
+    return NhaTroRutGon(
+      id: m['id'] as String? ?? '',
+      trangThai: m['trangThai'] as String? ?? 'draft',
+      ten: m['ten'] as String? ?? '',
+      loaiHinh: m['loaiHinh'] as String? ?? 'phong',
+      tienIchChung: List<String>.from(m['tienIchChung'] as List? ?? const []),
+      noiQuy: NoiQuy.fromMap(m['noiQuy']),
+      viTri: m['viTri'] as GeoPoint?,
+      diaChi: m['diaChi'] as String? ?? '',
+      phuong: m['phuong'] as String? ?? '',
+      searchText: m['searchText'] as String? ?? '',
+      anhBia: m['anhBia'] as String? ?? '',
+      daXacThucNha: m['daXacThucNha'] as bool? ?? false,
+    );
+  }
 }
 
-/// Tên hiển thị của mã tiện ích / phong cách sống lưu trong Firestore.
-const amenityLabels = {
-  'may_lanh': 'Máy lạnh',
-  'gac_lung': 'Gác lửng',
-  'wifi': 'Wifi',
-  'cho_de_xe': 'Chỗ để xe',
-  'an_ninh': 'An ninh',
-  'gio_giac_tu_do': 'Giờ giấc tự do',
-};
+/// Phòng — collection `phong_tro` (mục 2.17). 1 tin = 1 phòng; cọc cho đúng 1 phòng.
+class PhongTro {
+  const PhongTro({
+    required this.id,
+    required this.nhaTroId,
+    required this.chuTroId,
+    required this.ten,
+    this.khu = '',
+    this.tang,
+    this.coGac,
+    this.dienTich = 0,
+    this.dienTichGac,
+    this.soNguoiToiDa = 1,
+    this.soPhongNgu,
+    this.soWc,
+    this.coBep,
+    this.tienIch = const [],
+    this.giaThue = 0,
+    this.tienCoc = 0,
+    this.tienDien,
+    this.tienNuoc,
+    this.phiKhac = const [],
+    this.hopDongToiThieu,
+    this.ngayVaoO,
+    this.moTa = '',
+    this.anh = const [],
+    this.video = const [],
+    this.anhBia = '',
+    this.videoQuayLuc,
+    this.trangThai = 'draft',
+    this.lyDoTuChoi,
+    this.banChinhSua,
+    this.khoaThanhToanDen,
+    this.dangGiuLoai,
+    this.daXoa = false,
+    this.nhaTro,
+    this.taoLuc,
+  });
 
-const lifestyleLabels = {
-  'an_chay': 'Ăn chay',
-  'co_nuoi_thu_cung': 'Có nuôi thú cưng',
-  'khong_hut_thuoc': 'Không hút thuốc',
-};
+  final String id;
+  final String nhaTroId;
+  final String chuTroId;
+  final String ten;
+  final String khu;
+  final int? tang;
+  final bool? coGac;
+  final num dienTich;
+  final num? dienTichGac;
+  final int soNguoiToiDa;
+  final int? soPhongNgu;
+  final int? soWc;
+  final bool? coBep;
+  final List<String> tienIch;
+  final num giaThue;
+  final num tienCoc;
+  final ChiPhi? tienDien;
+  final ChiPhi? tienNuoc;
+  final List<PhiKhac> phiKhac;
+  final int? hopDongToiThieu;
+  final DateTime? ngayVaoO;
+  final String moTa;
+  final List<String> anh;
+  final List<String> video;
+  final String anhBia;
+  final DateTime? videoQuayLuc;
+
+  /// draft | pending_review | rejected | available | reserved | rented | hidden
+  final String trangThai;
+  final String? lyDoTuChoi;
+  final Map<String, dynamic>? banChinhSua;
+
+  /// Khóa thanh toán: có người đang ở trang thanh toán cọc tới lúc này.
+  final DateTime? khoaThanhToanDen;
+
+  /// 'app' | 'truc_tiep' khi phòng đang được giữ.
+  final String? dangGiuLoai;
+  final bool daXoa;
+  final NhaTroRutGon? nhaTro;
+  final DateTime? taoLuc;
+
+  bool dangKhoaThanhToan([DateTime? now]) =>
+      khoaThanhToanDen != null &&
+      khoaThanhToanDen!.isAfter(now ?? DateTime.now());
+
+  bool get conTrong => trangThai == 'available';
+
+  String get moTaDienTich {
+    final gac = (coGac ?? false) && dienTichGac != null
+        ? ' + gác ${_so(dienTichGac!)} m²'
+        : '';
+    return '${_so(dienTich)} m²$gac · Tối đa $soNguoiToiDa người';
+  }
+
+  static String _so(num x) =>
+      x == x.roundToDouble() ? x.toStringAsFixed(0) : x.toString();
+
+  factory PhongTro.fromMap(String id, Map<String, dynamic> m) => PhongTro(
+    id: id,
+    nhaTroId: m['nhaTroId'] as String? ?? '',
+    chuTroId: m['chuTroId'] as String? ?? '',
+    ten: m['ten'] as String? ?? '',
+    khu: m['khu'] as String? ?? '',
+    tang: (m['tang'] as num?)?.toInt(),
+    coGac: m['coGac'] as bool?,
+    dienTich: m['dienTich'] as num? ?? 0,
+    dienTichGac: m['dienTichGac'] as num?,
+    soNguoiToiDa: (m['soNguoiToiDa'] as num?)?.toInt() ?? 1,
+    soPhongNgu: (m['soPhongNgu'] as num?)?.toInt(),
+    soWc: (m['soWc'] as num?)?.toInt(),
+    coBep: m['coBep'] as bool?,
+    tienIch: List<String>.from(m['tienIch'] as List? ?? const []),
+    giaThue: m['giaThue'] as num? ?? 0,
+    tienCoc: m['tienCoc'] as num? ?? 0,
+    tienDien: ChiPhi.fromMap(m['tienDien']),
+    tienNuoc: ChiPhi.fromMap(m['tienNuoc']),
+    phiKhac: [
+      for (final x in m['phiKhac'] as List? ?? const [])
+        if (x is Map)
+          PhiKhac(ten: x['ten'] as String? ?? '', gia: x['gia'] as num? ?? 0),
+    ],
+    hopDongToiThieu: (m['hopDongToiThieu'] as num?)?.toInt(),
+    ngayVaoO: (m['ngayVaoO'] as Timestamp?)?.toDate(),
+    moTa: m['moTa'] as String? ?? '',
+    anh: List<String>.from(m['anh'] as List? ?? const []),
+    video: List<String>.from(m['video'] as List? ?? const []),
+    anhBia: m['anhBia'] as String? ?? '',
+    videoQuayLuc: (m['videoQuayLuc'] as Timestamp?)?.toDate(),
+    trangThai: m['trangThai'] as String? ?? 'draft',
+    lyDoTuChoi: m['lyDoTuChoi'] as String?,
+    banChinhSua: (m['banChinhSua'] as Map?)?.cast<String, dynamic>(),
+    khoaThanhToanDen: ((m['khoaThanhToan'] as Map?)?['den'] as Timestamp?)
+        ?.toDate(),
+    dangGiuLoai: (m['dangGiu'] as Map?)?['loai'] as String?,
+    daXoa: m['daXoa'] as bool? ?? false,
+    nhaTro: NhaTroRutGon.fromMap(m['nhaTro']),
+    taoLuc: (m['taoLuc'] as Timestamp?)?.toDate(),
+  );
+
+  /// Bản nháp chủ trọ tự lưu. Nhân bản phòng dùng [nhanBan].
+  Map<String, dynamic> toDraftMap() => {
+    'nhaTroId': nhaTroId,
+    'chuTroId': chuTroId,
+    'ten': ten,
+    'khu': khu,
+    'tang': tang,
+    'coGac': coGac,
+    'dienTich': dienTich,
+    'dienTichGac': dienTichGac,
+    'soNguoiToiDa': soNguoiToiDa,
+    'soPhongNgu': soPhongNgu,
+    'soWc': soWc,
+    'coBep': coBep,
+    'tienIch': tienIch,
+    'giaThue': giaThue,
+    'tienCoc': tienCoc,
+    'tienDien': tienDien?.toMap(),
+    'tienNuoc': tienNuoc?.toMap(),
+    'phiKhac': [for (final p in phiKhac) p.toMap()],
+    'hopDongToiThieu': hopDongToiThieu,
+    'ngayVaoO': ngayVaoO == null ? null : Timestamp.fromDate(ngayVaoO!),
+    'moTa': moTa,
+    'anh': anh,
+    'video': video,
+    'anhBia': anhBia,
+  };
+
+  /// "Nhân bản phòng": copy hết thông tin TRỪ tên phòng, ảnh và video (mục 2.3 Bước 3).
+  Map<String, dynamic> nhanBan() => {
+    ...toDraftMap(),
+    'ten': '',
+    'anh': <String>[],
+    'video': <String>[],
+    'anhBia': '',
+  };
+}

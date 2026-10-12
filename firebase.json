@@ -22,9 +22,24 @@
   },
   "functions": [
     {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "test",
+        "*.local"
+      ]
+    },
+    {
       "source": "functions-xac-nhan-email",
       "codebase": "xac-nhan-email",
-      "ignore": ["node_modules", ".git"]
+      "ignore": [
+        "node_modules",
+        ".git"
+      ]
     }
   ],
   "firestore": {
@@ -49,12 +64,40 @@
     "headers": [
       {
         "source": "**/*.@(html|js|json)",
-        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
       },
       {
         "source": "/",
-        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
       }
     ]
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": false
+    },
+    "singleProjectMode": true
   }
 }

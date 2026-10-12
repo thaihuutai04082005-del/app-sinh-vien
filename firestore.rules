@@ -132,44 +132,411 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Phòng trọ: ai cũng xem được. Đăng tin phải đi kèm lượt đếm trong quota/{uid}
-    // (tối đa 10 tin/ngày); tin mới luôn chưa xác thực và còn trống. Không ai sửa/xóa qua app.
+    // ================================================================ TÀI KHOẢN (Phần 4)
+    function signedIn() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    function adminDoc() {
+      return /databases/$(database)/documents/admins/$(request.auth.uid);
+    }
+
+    function laAdmin(quyen) {
+      return signedIn() && exists(adminDoc()) && get(adminDoc()).data.get(quyen, false) == true;
+    }
+
+    function xacThucCuaToi() {
+      return get(/databases/$(database)/documents/xac_thuc/$(request.auth.uid)).data;
+    }
+
+    // Số điện thoại đã OTP của người đang gọi (null nếu chưa có).
+    function sdtCuaToi() {
+      return exists(/databases/$(database)/documents/xac_thuc/$(request.auth.uid))
+          && xacThucCuaToi().get('sdtDaXacThuc', false) == true
+        ? xacThucCuaToi().get('sdt', null) : null;
+    }
+
+    // Trạng thái xác thực: chỉ Cloud Functions ghi. Admin danh tính đọc hàng chờ duyệt.
+    match /xac_thuc/{uid} {
+      allow read: if (signedIn() && request.auth.uid == uid) || laAdmin('danhTinh');
+      allow write: if false;
+    }
+
+    // Quyền admin: tạo trong Firebase Console; người dùng chỉ đọc quyền của chính mình.
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ================================================================ MODULE TÌM TRỌ
+    // Hệ thống quyết định (mục 2.18): mọi chuyển trạng thái, tiền, chat, đánh giá, báo cáo đi qua
+    // Cloud Functions. App chỉ tự ghi: bản nháp nhà trọ / phòng của mình, lưu ❤️, cài đặt thông báo,
+    // đánh dấu đã đọc thông báo.
+
+    function chiDoiCacTruong(truong) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(truong);
+    }
+
+    function truongNhapNhaTro() {
+      return ['chuTroId', 'ten', 'loaiHinh', 'tongSoPhong', 'soTang', 'tienIchChung', 'noiQuy', 'moTa',
+              'diaChi', 'phuong', 'searchText', 'viTri', 'anh', 'video', 'anhBia', 'camKet',
+              'trangThai', 'taoLuc', 'capNhatLuc'];
+    }
+
+    function truongNhapPhong() {
+      return ['nhaTroId', 'chuTroId', 'ten', 'khu', 'tang', 'coGac', 'dienTich', 'dienTichGac', 'soNguoiToiDa',
+              'soPhongNgu', 'soWc', 'coBep', 'tienIch', 'giaThue', 'tienCoc', 'tienDien', 'tienNuoc', 'phiKhac',
+              'hopDongToiThieu', 'ngayVaoO', 'moTa', 'anh', 'video', 'anhBia', 'trangThai', 'daXoa',
+              'taoLuc', 'capNhatLuc'];
+    }
+
+    function laChu(data) {
+      return signedIn() && data.chuTroId == request.auth.uid;
+    }
+
+    // Nhà trọ: ai cũng xem tin đang hiển thị; chủ xem tin của mình; admin Tìm trọ xem tất cả.
+    match /nha_tro/{id} {
+      allow read: if resource.data.trangThai == 'active' || laChu(resource.data) || laAdmin('tro');
+      allow create: if laChu(request.resource.data)
+        && request.resource.data.trangThai == 'draft'
+        && request.resource.data.keys().hasOnly(truongNhapNhaTro());
+      allow update: if laChu(resource.data) && laChu(request.resource.data)
+        && resource.data.trangThai in ['draft', 'rejected']
+        && request.resource.data.trangThai == 'draft'
+        && chiDoiCacTruong(truongNhapNhaTro());
+      allow delete: if laChu(resource.data) && resource.data.trangThai == 'draft';
+
+      // Giấy tờ nhà: riêng tư, chỉ chủ trọ và admin Tìm trọ.
+      match /rieng/{docId} {
+        function nha() {
+          return get(/databases/$(database)/documents/nha_tro/$(id)).data;
+        }
+        allow read: if laChu(nha()) || laAdmin('tro');
+        allow write: if laChu(nha()) && nha().trangThai in ['draft', 'rejected']
+          && request.resource.data.keys().hasOnly(['giayTo'])
+          && request.resource.data.giayTo is list && request.resource.data.giayTo.size() <= 4;
+      }
+    }
+
+    // Phòng: ai cũng xem phòng còn trống / đã cọc / đã cho thuê; bản nháp, tạm ẩn, chờ duyệt chỉ chủ và admin.
     match /phong_tro/{id} {
+      allow read: if (resource.data.trangThai in ['available', 'reserved', 'rented'] && resource.data.get('daXoa', false) == false)
+        || laChu(resource.data) || laAdmin('tro');
+      allow create: if laChu(request.resource.data)
+        && request.resource.data.trangThai == 'draft'
+        && request.resource.data.daXoa == false
+        && request.resource.data.keys().hasOnly(truongNhapPhong())
+        && get(/databases/$(database)/documents/nha_tro/$(request.resource.data.nhaTroId)).data.chuTroId == request.auth.uid;
+      allow update: if laChu(resource.data) && laChu(request.resource.data)
+        && resource.data.trangThai in ['draft', 'rejected']
+        && request.resource.data.trangThai == 'draft'
+        && request.resource.data.nhaTroId == resource.data.nhaTroId
+        && chiDoiCacTruong(truongNhapPhong());
+      allow delete: if laChu(resource.data) && resource.data.trangThai in ['draft', 'rejected'];
+    }
+
+    // Khoản cọc, khoản tiền: chỉ sinh viên, chủ trọ của giao dịch và admin Tìm trọ đọc. Không ai ghi qua app.
+    match /tro_dat_coc/{id} {
+      allow read: if signedIn() && (resource.data.sinhVienId == request.auth.uid
+        || resource.data.chuTroId == request.auth.uid || laAdmin('tro'));
+      allow write: if false;
+    }
+
+    match /tro_khoan_tien/{id} {
+      allow read: if signedIn() && (resource == null || resource.data.nguoiTra == request.auth.uid
+        || resource.data.nguoiNhan == request.auth.uid || laAdmin('tro'));
+      allow write: if false;
+    }
+
+    // Ví chủ trọ (chỉ hiển thị).
+    match /tro_vi/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Cọc trực tiếp: chủ trọ, người cọc (đúng số điện thoại đã OTP mà chủ nhập) và admin.
+    match /tro_coc_truc_tiep/{id} {
+      allow read: if signedIn() && (resource == null || resource.data.chuTroId == request.auth.uid
+        || (resource.data.sdtNguoiCoc != null && resource.data.sdtNguoiCoc == sdtCuaToi()) || laAdmin('tro'));
+      allow write: if false;
+    }
+
+    // Vi phạm, khóa chức năng: người bị ghi xem của mình; admin xem tất cả.
+    match /tro_vi_pham/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || laAdmin('tro'));
+      allow write: if false;
+    }
+
+    match /tro_khoa/{khoa} {
+      allow read: if signedIn() && (khoa == request.auth.uid || khoa == sdtCuaToi() || laAdmin('tro'));
+      allow write: if false;
+    }
+
+    // Chỉ số uy tín công khai của chủ trọ.
+    match /tro_chi_so_chu/{uid} {
       allow read: if true;
-      allow create: if isCountedPost(id, 'ownerId')
-        && request.resource.data.keys().hasOnly(['ownerId', 'ownerVerified', 'title', 'images', 'price',
-                                                 'electricPrice', 'waterPrice', 'area', 'maxPeople',
-                                                 'amenities', 'lifestylePrefs', 'depositEnabled',
-                                                 'location', 'address', 'status', 'roomType', 'createdAt'])
-        && request.resource.data.ownerVerified == false
-        && request.resource.data.status == 'available'
-        && request.resource.data.roomType in ['o_rieng', 'o_ghep', 'studio']
-        && request.resource.data.title is string
-        && request.resource.data.title.size() > 0
-        && request.resource.data.title.size() <= 200
-        && request.resource.data.address is string
-        && request.resource.data.address.size() > 0
-        && request.resource.data.address.size() <= 300
-        && request.resource.data.price is number
-        && request.resource.data.price >= 0
-        && request.resource.data.electricPrice is number
-        && request.resource.data.electricPrice >= 0
-        && request.resource.data.waterPrice is number
-        && request.resource.data.waterPrice >= 0
-        && request.resource.data.area is number
-        && request.resource.data.area > 0
-        && request.resource.data.maxPeople is int
-        && request.resource.data.maxPeople >= 1
-        && request.resource.data.amenities is list
-        && request.resource.data.amenities.size() <= 10
-        && request.resource.data.lifestylePrefs is list
-        && request.resource.data.lifestylePrefs.size() <= 10
-        && request.resource.data.depositEnabled is bool
-        && request.resource.data.location is latlng
-        && isUrlList(request.resource.data.images, 6)
-        && request.resource.data.images.size() > 0
-        && allHttpsUrls(request.resource.data.images);
-      allow update, delete: if false;
+      allow write: if false;
+    }
+
+    // Hồ sơ riêng trong module: người dùng chỉ tự sửa cài đặt thông báo (bật / tắt từng nhóm).
+    match /tro_ho_so/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['caiDatThongBao'])
+        && request.resource.data.caiDatThongBao is map;
+      allow update: if signedIn() && request.auth.uid == uid
+        && chiDoiCacTruong(['caiDatThongBao'])
+        && request.resource.data.caiDatThongBao is map;
+      allow delete: if false;
+    }
+
+    // Lưu ❤️ nhà trọ (không lưu được nhà trọ của chính mình).
+    match /tro_luu/{id} {
+      allow read: if signedIn() && (resource == null || resource.data.uid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && id == request.auth.uid + '_' + request.resource.data.nhaTroId
+        && request.resource.data.keys().hasOnly(['uid', 'nhaTroId', 'nhanThongBao', 'luc'])
+        && request.resource.data.nhanThongBao is bool
+        && get(/databases/$(database)/documents/nha_tro/$(request.resource.data.nhaTroId)).data.chuTroId != request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Chat riêng của Tìm trọ: chỉ 2 người trong cuộc (và admin khi xử lý khiếu nại). Gửi tin qua hệ thống.
+    match /tro_chat/{chatId} {
+      allow read: if signedIn() && (resource == null || request.auth.uid in resource.data.thanhVien || laAdmin('tro'));
+      allow write: if false;
+
+      match /tin_nhan/{tinId} {
+        allow read: if signedIn() && (request.auth.uid in get(/databases/$(database)/documents/tro_chat/$(chatId)).data.thanhVien
+          || laAdmin('tro'));
+        allow write: if false;
+      }
+    }
+
+    // Đánh giá: hiện công khai (trừ bị ẩn); người viết xem đánh giá của mình. Viết / sửa qua hệ thống.
+    match /tro_danh_gia/{id} {
+      allow read: if resource == null || resource.data.hienThi == 'hien'
+        || (signedIn() && resource.data.nguoiViet == request.auth.uid) || laAdmin('tro');
+      allow write: if false;
+    }
+
+    match /tro_bao_cao/{id} {
+      allow read: if laAdmin('tro');
+      allow write: if false;
+    }
+
+    match /tro_khang_nghi/{id} {
+      allow read: if signedIn() && (resource.data.nguoiGui == request.auth.uid || laAdmin('tro'));
+      allow write: if false;
+    }
+
+    // Thông báo: người nhận đọc và chỉ được đánh dấu đã đọc.
+    match /tro_thong_bao/{id} {
+      allow read: if signedIn() && resource.data.nguoiNhan == request.auth.uid;
+      allow update: if signedIn() && resource.data.nguoiNhan == request.auth.uid
+        && chiDoiCacTruong(['docLuc']);
+      allow create, delete: if false;
+    }
+
+    match /tro_nhat_ky_admin/{id} {
+      allow read: if laAdmin('tro');
+      allow write: if false;
+    }
+
+    // =====================================================================
+    // QUÁN ĂN (tiền tố qa_): chủ quán chỉ ghi BẢN NHÁP quán và lưu ❤️; mọi thứ khác do Cloud Functions ghi.
+    // =====================================================================
+
+    function truongNhapQuan() {
+      return ['chuQuanId', 'ten', 'loaiQuan', 'loaiMon', 'moTa', 'sdt', 'diaChi', 'phuong', 'viTri', 'luuDong',
+              'ghiChuViTri', 'gioMoCua', 'phucVu', 'tienIch', 'nhanDatBan', 'datMon', 'anhMatTien', 'anhBia',
+              'anhKhac', 'viTriAnh', 'camKet', 'searchText', 'trangThai', 'taoLuc', 'capNhatLuc'];
+    }
+
+    function laChuQuan(data) {
+      return signedIn() && data.chuQuanId == request.auth.uid;
+    }
+
+    // Quán: ai cũng xem quán đang hoạt động; chủ xem quán của mình; admin Quán ăn xem tất cả.
+    match /qa_quan/{id} {
+      allow read: if resource.data.trangThai == 'active' || laChuQuan(resource.data) || laAdmin('quanAn');
+      allow create: if laChuQuan(request.resource.data)
+        && request.resource.data.trangThai == 'draft'
+        && request.resource.data.keys().hasOnly(truongNhapQuan());
+      allow update: if laChuQuan(resource.data) && laChuQuan(request.resource.data)
+        && resource.data.trangThai in ['draft', 'rejected']
+        && request.resource.data.trangThai == 'draft'
+        && chiDoiCacTruong(truongNhapQuan());
+      allow delete: if laChuQuan(resource.data) && resource.data.trangThai == 'draft';
+
+      // Giấy tờ (mã số thuế, giấy chứng nhận): riêng tư, chỉ chủ quán và admin Quán ăn.
+      match /rieng/{docId} {
+        function quanCha() {
+          return get(/databases/$(database)/documents/qa_quan/$(id)).data;
+        }
+        allow read: if laChuQuan(quanCha()) || laAdmin('quanAn');
+        allow write: if laChuQuan(quanCha()) && quanCha().trangThai in ['draft', 'rejected']
+          && request.resource.data.keys().hasOnly(['maSoThue', 'anhGiayChungNhan', 'anhAttp'])
+          && request.resource.data.get('anhGiayChungNhan', []).size() <= 4
+          && request.resource.data.get('anhAttp', []).size() <= 4;
+      }
+    }
+
+    // Menu, khuyến mãi: công khai (xem menu của quán); ghi qua hệ thống (tính lại mức giá, chữ tìm kiếm).
+    match /qa_nhom_mon/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /qa_mon/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /qa_khuyen_mai/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Check-in: công khai nếu người check-in chọn; người check-in luôn xem của mình.
+    match /qa_check_in/{id} {
+      allow read: if resource.data.congKhai == true || (signedIn() && resource.data.svId == request.auth.uid)
+        || laAdmin('quanAn');
+      allow write: if false;
+    }
+
+    // Đặt bàn, đơn món, khoản tiền: chỉ sinh viên, chủ quán của giao dịch và admin. Không ai ghi qua app.
+    match /qa_dat_ban/{id} {
+      allow read: if signedIn() && (resource.data.svId == request.auth.uid
+        || resource.data.chuQuanId == request.auth.uid || laAdmin('quanAn'));
+      allow write: if false;
+    }
+
+    match /qa_don/{id} {
+      allow read: if signedIn() && (resource.data.svId == request.auth.uid
+        || resource.data.chuQuanId == request.auth.uid || laAdmin('quanAn'));
+      allow write: if false;
+
+      // Mã nhận món 4 số: CHỈ sinh viên của đơn đọc được (chủ quán chỉ nhập mã qua hệ thống).
+      match /rieng/{docId} {
+        allow read: if signedIn()
+          && get(/databases/$(database)/documents/qa_don/$(id)).data.svId == request.auth.uid;
+        allow write: if false;
+      }
+    }
+
+    match /qa_khoan_tien/{id} {
+      allow read: if signedIn() && (resource == null || resource.data.nguoiTra == request.auth.uid
+        || resource.data.nguoiNhan == request.auth.uid || laAdmin('quanAn'));
+      allow write: if false;
+    }
+
+    match /qa_cong_gia_lap/{id} {
+      allow read, write: if false;
+    }
+
+    // Ví chủ quán (chỉ hiển thị).
+    match /qa_vi/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Vi phạm, khóa chức năng: người bị ghi xem của mình; admin xem tất cả.
+    match /qa_vi_pham/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || laAdmin('quanAn'));
+      allow write: if false;
+    }
+
+    match /qa_khieu_nai_sai/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || laAdmin('quanAn'));
+      allow write: if false;
+    }
+
+    match /qa_khoa/{khoa} {
+      allow read: if signedIn() && (khoa == request.auth.uid || khoa == sdtCuaToi() || laAdmin('quanAn'));
+      allow write: if false;
+    }
+
+    // Chỉ số uy tín công khai của chủ quán.
+    match /qa_chi_so_chu/{uid} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Hồ sơ riêng trong module: người dùng chỉ tự sửa cài đặt thông báo.
+    match /qa_ho_so/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['caiDatThongBao'])
+        && request.resource.data.caiDatThongBao is map;
+      allow update: if signedIn() && request.auth.uid == uid
+        && chiDoiCacTruong(['caiDatThongBao'])
+        && request.resource.data.caiDatThongBao is map;
+      allow delete: if false;
+    }
+
+    // Lưu ❤️ quán (không lưu được quán của chính mình).
+    match /qa_luu/{id} {
+      allow read: if signedIn() && (resource == null || resource.data.uid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && id == request.auth.uid + '_' + request.resource.data.quanId
+        && request.resource.data.keys().hasOnly(['uid', 'quanId', 'nhanThongBao', 'luc'])
+        && request.resource.data.nhanThongBao is bool
+        && get(/databases/$(database)/documents/qa_quan/$(request.resource.data.quanId)).data.chuQuanId != request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Chat riêng của Quán ăn: chỉ 2 người trong cuộc (và admin khi xử lý khiếu nại). Gửi tin qua hệ thống.
+    match /qa_chat/{chatId} {
+      allow read: if signedIn() && (resource == null || request.auth.uid in resource.data.thanhVien || laAdmin('quanAn'));
+      allow write: if false;
+
+      match /tin_nhan/{tinId} {
+        allow read: if signedIn() && (request.auth.uid in get(/databases/$(database)/documents/qa_chat/$(chatId)).data.thanhVien
+          || laAdmin('quanAn'));
+        allow write: if false;
+      }
+    }
+
+    // Đánh giá: hiện công khai (trừ bị ẩn); người viết xem đánh giá của mình. Viết / sửa qua hệ thống.
+    match /qa_danh_gia/{id} {
+      allow read: if resource == null || resource.data.trangThaiHienThi == 'hien'
+        || (signedIn() && resource.data.svId == request.auth.uid) || laAdmin('quanAn');
+      allow write: if false;
+    }
+
+    match /qa_bao_cao/{id} {
+      allow read: if laAdmin('quanAn');
+      allow write: if false;
+    }
+
+    match /qa_bao_cao_sai/{id} {
+      allow read, write: if false;
+    }
+
+    match /qa_khang_nghi/{id} {
+      allow read: if signedIn() && (resource.data.nguoiGui == request.auth.uid || laAdmin('quanAn'));
+      allow write: if false;
+    }
+
+    // Thông báo: người nhận đọc và chỉ được đánh dấu đã đọc.
+    match /qa_thong_bao/{id} {
+      allow read: if signedIn() && resource.data.nguoiNhan == request.auth.uid;
+      allow update: if signedIn() && resource.data.nguoiNhan == request.auth.uid
+        && chiDoiCacTruong(['docLuc']);
+      allow create, delete: if false;
+    }
+
+    match /qa_nhat_ky_admin/{id} {
+      allow read: if laAdmin('quanAn');
+      allow write: if false;
+    }
+
+    // Cấu hình: chỉ đọc / ghi qua hệ thống (admin ghi đè bằng hành động adminCauHinh).
+    match /qa_cau_hinh/{id} {
+      allow read, write: if false;
     }
 
     // Điểm vui chơi: ai cũng xem được. Đăng mới phải đi kèm lượt đếm trong quota/{uid}

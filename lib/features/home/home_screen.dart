@@ -4,8 +4,12 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/image_storage_service.dart';
 import '../shop/screens/shop_screen.dart';
 import '../shop/services/product_service.dart';
-import '../tro/screens/phong_tro_list_screen.dart';
-import '../tro/services/phong_tro_service.dart';
+import '../quan_an/screens/quan_an_routes.dart';
+import '../quan_an/screens/quan_an_shell.dart';
+import '../quan_an/services/quan_an_dich_vu.dart';
+import '../tro/screens/tro_routes.dart';
+import '../tro/screens/tro_shell.dart';
+import '../tro/services/tro_dich_vu.dart';
 import '../vui_choi/screens/vui_choi_list_screen.dart';
 import '../vui_choi/services/vui_choi_service.dart';
 import '../xe_don_tro/screens/xe_don_tro_screen.dart';
@@ -39,17 +43,14 @@ class _HomeScreenState extends State<HomeScreen> {
       'Chỗ ở vừa ý',
       Icons.home_work_outlined,
       const Color(0xFF0C6B5D),
-      () => PhongTroListScreen(
-        service: FirestorePhongTroService(),
-        storage: FirebaseImageStorageService(),
-      ),
+      () => TroShell(dv: TroDichVu.firebase()),
     ),
-    const _Module(
+    _Module(
       'Quán ăn',
       'No bụng, nhẹ ví',
       Icons.restaurant_outlined,
-      Color(0xFFE47A32),
-      null,
+      const Color(0xFFE47A32),
+      () => QuanAnShell(dv: QuanAnDichVu.firebase()),
     ),
     _Module(
       'Xe dọn trọ',
@@ -102,8 +103,13 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       return;
     }
-    Navigator.of(context)
-        .push(MaterialPageRoute<void>(builder: (_) => builder()));
+    // Tìm trọ và Quán ăn có giao diện riêng (xanh biển – trắng) nên mở bằng route của module.
+    final route = switch (module.label) {
+      'Tìm trọ' => troRoute<void>((_) => builder()),
+      'Quán ăn' => quanAnRoute<void>((_) => builder()),
+      _ => MaterialPageRoute<void>(builder: (_) => builder()),
+    };
+    Navigator.of(context).push(route);
   }
 
   @override
