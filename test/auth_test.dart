@@ -23,6 +23,19 @@ void main() {
     expect(find.text('Email không hợp lệ'), findsOneWidget);
   });
 
+  testWidgets('Quên mật khẩu mang email sang và kiểm tra định dạng', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+    await tester.enterText(find.byType(TextFormField).first, 'abc');
+    await tester.tap(find.text('Quên mật khẩu?'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextFormField, 'abc'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Gửi link đặt lại'));
+    await tester.pump();
+    expect(find.text('Email không hợp lệ'), findsOneWidget);
+  });
+
   test('messageFor dịch mã lỗi Firebase sang tiếng Việt', () {
     expect(
       AuthService.messageFor(

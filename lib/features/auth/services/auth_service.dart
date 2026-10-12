@@ -87,6 +87,13 @@ class AuthService {
     );
   }
 
+  /// Firebase gửi link đặt lại mật khẩu tới [email]. Không báo lỗi khi email
+  /// chưa đăng ký (chống dò tài khoản), nên UI chỉ nói "nếu có tài khoản...".
+  Future<void> sendPasswordReset(String email) async {
+    _auth.setLanguageCode('vi');
+    await _auth.sendPasswordResetEmail(email: email.trim());
+  }
+
   Future<void> signOut() => _auth.signOut();
 
   /// Đọc hồ sơ từ collection `users`; null nếu chưa có document.
