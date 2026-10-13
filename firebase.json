@@ -40,6 +40,15 @@
         "node_modules",
         ".git"
       ]
+    },
+    {
+      "source": "functions-xe-shop",
+      "codebase": "xe-shop",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "test"
+      ]
     }
   ],
   "firestore": {

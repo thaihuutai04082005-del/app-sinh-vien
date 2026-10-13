@@ -65,42 +65,34 @@ service cloud.firestore {
              && request.resource.data.posts == before('posts')));
     }
 
+    // ================================================================ SHOP ĐỒ RẺ + XE DỌN TRỌ
+    // Mọi ghi (đăng/sửa/xóa sản phẩm, đặt hàng, đặt xe, báo giá, đổi trạng thái) đi qua
+    // Cloud Functions shopApi / xeApi (functions-xe-shop). App chỉ đọc.
+
+    // Sản phẩm: công khai.
     match /products/{id} {
       allow read: if true;
-      allow create: if isCountedPost(id, 'shopId')
-        && request.resource.data.keys().hasOnly(['shopId', 'name', 'images', 'price', 'sizes',
-                                                 'stock', 'category', 'status', 'videos', 'createdAt'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 200
-        && request.resource.data.price is number
-        && request.resource.data.price >= 0
-        && request.resource.data.stock is int
-        && request.resource.data.status == 'active'
-        && isUrlList(request.resource.data.images, 10)
-        && request.resource.data.images.size() > 0
-        && isUrlList(request.resource.data.videos, 1);
-      allow update, delete: if false;
+      allow write: if false;
+    }
+
+    // Đơn hàng có địa chỉ, số điện thoại: chỉ người mua và shop của đơn.
+    match /orders/{id} {
+      allow read: if request.auth != null
+        && (resource.data.buyerId == request.auth.uid || resource.data.shopId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Hồ sơ tài xế: công khai để sinh viên chọn xe.
+    match /xe_don_tro/{uid} {
+      allow read: if true;
+      allow write: if false;
     }
 
     // Đơn đặt xe có địa chỉ nhà: chỉ người đặt và tài xế được giao đọc.
     match /booking_xe/{id} {
       allow read: if request.auth != null
         && (resource.data.userId == request.auth.uid || resource.data.driverId == request.auth.uid);
-      allow create: if isCountedPost(id, 'userId')
-        && request.resource.data.keys().hasOnly(['userId', 'driverId', 'fromAddress', 'toAddress',
-                                                 'itemPhotos', 'quotedPrice', 'scheduledAt', 'status',
-                                                 'videos', 'createdAt'])
-        && request.resource.data.fromAddress is string
-        && request.resource.data.fromAddress.size() > 0
-        && request.resource.data.toAddress is string
-        && request.resource.data.toAddress.size() > 0
-        && request.resource.data.scheduledAt is timestamp
-        && request.resource.data.quotedPrice == null
-        && request.resource.data.status == 'pending'
-        && isUrlList(request.resource.data.itemPhotos, 10)
-        && isUrlList(request.resource.data.videos, 1);
-      allow update, delete: if false;
+      allow write: if false;
     }
 
     // Hồ sơ người dùng: chỉ chính chủ đọc/ghi, và phải là tài khoản email (không phải ẩn danh).
