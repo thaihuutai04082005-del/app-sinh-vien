@@ -6,6 +6,7 @@ import 'package:app_sinh_vien/features/shop/services/shop_dich_vu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../fakes/xac_thuc_gia.dart';
 import 'fakes.dart';
 
 Future<void> _pump(WidgetTester tester, Widget home) async {
@@ -78,6 +79,16 @@ void main() {
     await tester.pump();
 
     expect(find.text('Cần ít nhất 1 ảnh sản phẩm.'), findsOneWidget);
+  });
+
+  testWidgets('chưa xác thực số điện thoại thì chưa cho đăng bán', (
+    tester,
+  ) async {
+    await _pumpShop(tester, shopDv(KhoGia(), 'ban', xacThuc: XacThucGia()));
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Xác thực số điện thoại'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Tên sản phẩm'), findsNothing);
   });
 
   testWidgets('lọc theo danh mục và mức giá', (tester) async {

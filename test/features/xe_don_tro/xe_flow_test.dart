@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:app_sinh_vien/core/services/image_storage_service.dart';
+import 'package:app_sinh_vien/features/auth/models/xac_thuc.dart';
 import 'package:app_sinh_vien/features/auth/services/xac_thuc_service.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/models/booking_xe.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/models/tai_xe.dart';
@@ -12,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../fakes/xac_thuc_gia.dart';
 import '../shop/fakes.dart' show png;
 
 class _Storage implements ImageStorageService {
@@ -27,6 +29,7 @@ class _Storage implements ImageStorageService {
 class _Kho {
   final taiXe = <TaiXe>[];
   final don = <String, Map<String, dynamic>>{};
+  final bangLai = <String, List<String>>{};
 }
 
 class _FakeXe implements XeService {
@@ -50,21 +53,54 @@ class _FakeXe implements XeService {
   }
 
   @override
-  Future<void> luuHoSoTaiXe({
-    required String vehicleType,
-    required String area,
-    required String priceReference,
-    String description = '',
-  }) async => kho.taiXe.add(
-    TaiXe(
-      driverId: uid,
-      name: 'Tài xế $uid',
-      vehicleType: vehicleType,
-      area: area,
-      priceReference: priceReference,
-      driverVerified: true,
-    ),
-  );
+  Future<String> luuHoSoTaiXe(HoSoTaiXeNhap h) async {
+    kho.taiXe.removeWhere((t) => t.driverId == uid);
+    kho.taiXe.add(
+      TaiXe(
+        driverId: uid,
+        name: 'Tài xế $uid',
+        vehicleType: h.vehicleType,
+        licensePlate: h.licensePlate,
+        vehiclePhotos: h.vehiclePhotos,
+        area: h.area,
+        priceReference: h.priceReference,
+        driverVerified: true,
+      ),
+    );
+    kho.bangLai[uid] = h.licensePhotos;
+    return 'pending';
+  }
+
+  @override
+  Future<List<String>> giayTo(String driverId) async =>
+      kho.bangLai[driverId] ?? const [];
+
+  @override
+  Future<List<TaiXe>> hoSoChoDuyet() async => [
+    for (final t in kho.taiXe)
+      if (t.approval == 'pending') t,
+  ];
+
+  @override
+  Future<void> duyetTaiXe(
+    String driverId, {
+    required bool dongY,
+    String? lyDo,
+  }) async {
+    final i = kho.taiXe.indexWhere((t) => t.driverId == driverId);
+    final t = kho.taiXe[i];
+    kho.taiXe[i] = TaiXe(
+      driverId: t.driverId,
+      name: t.name,
+      vehicleType: t.vehicleType,
+      area: t.area,
+      priceReference: t.priceReference,
+      licensePlate: t.licensePlate,
+      vehiclePhotos: t.vehiclePhotos,
+      approval: dongY ? 'approved' : 'rejected',
+      rejectReason: lyDo,
+    );
+  }
 
   @override
   Future<void> doiTrangThaiTaiXe(String status) async {}
@@ -121,10 +157,11 @@ class _FakeXe implements XeService {
   }
 }
 
-XeDichVu _dv(_Kho kho, String uid) => XeDichVu(
+XeDichVu _dv(_Kho kho, String uid, {XacThucGia? xacThuc}) => XeDichVu(
   uid: uid,
   xe: _FakeXe(kho, uid),
   storage: _Storage(),
+  xacThuc: xacThuc ?? XacThucGia.day(),
   pickImages: (_) async => [XFile.fromData(png, name: 'do.png')],
 );
 
@@ -135,6 +172,7 @@ const _taiXeMau = TaiXe(
   area: 'Thủ Đức',
   priceReference: '150k/chuyến',
   driverVerified: true,
+  approval: 'approved',
 );
 
 Future<void> _pump(WidgetTester tester, Widget home) async {
@@ -157,6 +195,7 @@ void main() {
           vehicleType: 'xe_may',
           area: 'Q1',
           priceReference: '50k',
+          approval: 'approved',
         ),
       ]);
     await _pump(tester, XeDonTroScreen(dv: _dv(kho, 'sv')));
@@ -292,33 +331,115 @@ void main() {
     expect(find.text('Đổi ngày'), findsOneWidget);
   });
 
-  testWidgets('chưa có hồ sơ tài xế thì mời đăng ký, đăng ký xong hiện hồ sơ', (
-    tester,
-  ) async {
-    final kho = _Kho();
-    await _pump(tester, XeDonTroScreen(dv: _dv(kho, 'u')));
-    await tester.tap(find.text('Tôi là tài xế'));
-    await tester.pumpAndSettle();
+  testWidgets('chưa xác thực CCCD thì chưa cho đăng ký tài xế', (tester) async {
+    await _pump(
+      tester,
+      XeDonTroScreen(
+        dv: _dv(_Kho(), 'u', xacThuc: XacThucGia()),
+        initialTab: 2,
+      ),
+    );
     await tester.tap(find.text('Đăng ký làm tài xế'));
     await tester.pumpAndSettle();
+    expect(find.text('Xác thực danh tính'), findsOneWidget);
+    expect(find.text('Biển số xe'), findsNothing);
+  });
 
-    await tester.tap(find.text('Loại xe'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Xe tải nhỏ').last);
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Khu vực hoạt động'),
-      'Bình Thạnh',
-    );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Bảng giá tham khảo'),
-      '200k/chuyến',
-    );
-    await tester.tap(find.widgetWithText(FilledButton, 'Đăng ký'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'đăng ký tài xế: cần biển số, ảnh xe, bằng lái; gửi xong chờ duyệt',
+    (tester) async {
+      final kho = _Kho();
+      await _pump(tester, XeDonTroScreen(dv: _dv(kho, 'u'), initialTab: 2));
+      await tester.tap(find.text('Đăng ký làm tài xế'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Tài xế u'), findsOneWidget);
-    expect(find.text('Đang nhận đơn mới'), findsOneWidget);
-    expect(find.text('Chưa có khách gửi yêu cầu.'), findsOneWidget);
+      await tester.tap(find.text('Loại xe'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xe tải nhỏ').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Biển số xe'),
+        'abc',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Khu vực hoạt động'),
+        'Bình Thạnh',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Bảng giá tham khảo'),
+        '200k/chuyến',
+      );
+      await tester.ensureVisible(find.text('Gửi hồ sơ để duyệt'));
+      await tester.tap(find.text('Gửi hồ sơ để duyệt'));
+      await tester.pumpAndSettle();
+      expect(find.text('Biển số không hợp lệ'), findsOneWidget);
+      expect(
+        find.text('Cần ít nhất 1 ảnh xe và 1 ảnh bằng lái.'),
+        findsOneWidget,
+      );
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Biển số xe'),
+        '59C1-234.56',
+      );
+      await tester.ensureVisible(find.text('Thêm ảnh').first);
+      await tester.tap(find.text('Thêm ảnh').first);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Thêm ảnh').last);
+      await tester.tap(find.text('Thêm ảnh').last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Gửi hồ sơ để duyệt'));
+      await tester.tap(find.text('Gửi hồ sơ để duyệt'));
+      await tester.pumpAndSettle();
+
+      final t = kho.taiXe.single;
+      expect(t.licensePlate, '59C1-234.56');
+      expect(t.vehiclePhotos.single, startsWith('https://cdn.test/xe_anh/'));
+      expect(
+        kho.bangLai['u']!.single,
+        startsWith('https://cdn.test/xe_rieng/'),
+      );
+      expect(find.text('Đang chờ duyệt'), findsOneWidget);
+      // Chưa duyệt thì không có công tắc nhận đơn.
+      expect(find.text('Đang nhận đơn mới'), findsNothing);
+    },
+  );
+
+  testWidgets('admin Xe dọn trọ duyệt hồ sơ thì tài xế hết chờ duyệt', (
+    tester,
+  ) async {
+    final kho = _Kho()
+      ..taiXe.add(
+        const TaiXe(
+          driverId: 'tx2',
+          name: 'Chú Năm',
+          vehicleType: 'xe_tai_nho',
+          area: 'Q7',
+          priceReference: '300k',
+          licensePlate: '51F12345',
+        ),
+      )
+      ..bangLai['tx2'] = ['https://cdn.test/bang.jpg'];
+    final admin = _dv(
+      kho,
+      'ad',
+      xacThuc: XacThucGia(quyen: const QuyenAdmin(xe: true)),
+    );
+    await _pump(tester, XeDonTroScreen(dv: admin));
+    // Chưa duyệt thì sinh viên không thấy.
+    expect(find.text('Chú Năm'), findsNothing);
+
+    await tester.tap(find.text('Duyệt tài xế'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Biển số 51F12345'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Duyệt'));
+    await tester.pumpAndSettle();
+    expect(kho.taiXe.single.approval, 'approved');
+    expect(find.text('Không có hồ sơ nào chờ duyệt.'), findsOneWidget);
+  });
+
+  testWidgets('không phải admin thì không thấy nút duyệt', (tester) async {
+    await _pump(tester, XeDonTroScreen(dv: _dv(_Kho(), 'sv')));
+    expect(find.text('Duyệt tài xế'), findsNothing);
   });
 }

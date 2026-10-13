@@ -17,6 +17,7 @@ export const xeApi = onCall({ region: REGION }, async (request) => {
   switch (hanhDong) {
     case 'luuHoSoTaiXe': return xe.luuHoSoTaiXe(nd, tham);
     case 'doiTrangThaiTaiXe': return xe.doiTrangThaiTaiXe(nd, tham);
+    case 'duyetTaiXe': return xe.duyetTaiXe(nd, tham);
     case 'guiYeuCau': return xe.guiYeuCau(nd, tham);
     case 'thaoTacDon': return xe.thaoTacDon(nd, tham);
     default: throw thamSoSai('Hành động không hợp lệ.');

@@ -8,13 +8,51 @@ export const GIA_TOI_DA = 50_000_000;
 export const YEU_CAU_CHO_TOI_DA = 5;
 const NGAY = 86_400_000;
 
+/** Biển số Việt Nam, viết hoa, bỏ khoảng trắng thừa: "59-C1 234.56", "51F12345". */
+export function bienSo(v) {
+  const s = String(v ?? '').trim().toUpperCase().replace(/\s+/g, ' ');
+  if (!/^\d{2}[A-Z]{1,2}[- ]?\d{0,2}[- ]?[\d.]{4,6}$/.test(s.replace(/ /g, ''))) {
+    throw thamSoSai('Biển số xe không hợp lệ (VD: 59C1-234.56).');
+  }
+  return s;
+}
+
 export function hoSoTaiXe(tham) {
   return {
-    vehicleType: motTrong(tham.vehicleType, LOAI_XE, 'Loại xe'),
-    area: chuoi(tham.area, 'Khu vực hoạt động', { max: 120 }),
-    priceReference: chuoi(tham.priceReference, 'Bảng giá tham khảo', { max: 300 }),
-    description: chuoiTuyChon(tham.description, 'Giới thiệu', 500),
+    hoSo: {
+      vehicleType: motTrong(tham.vehicleType, LOAI_XE, 'Loại xe'),
+      licensePlate: bienSo(tham.licensePlate),
+      vehiclePhotos: danhSachLink(tham.vehiclePhotos, 'ảnh xe', { min: 1, max: 4 }),
+      area: chuoi(tham.area, 'Khu vực hoạt động', { max: 120 }),
+      priceReference: chuoi(tham.priceReference, 'Bảng giá tham khảo', { max: 300 }),
+      description: chuoiTuyChon(tham.description, 'Giới thiệu', 500),
+    },
+    giayTo: { licensePhotos: danhSachLink(tham.licensePhotos, 'ảnh bằng lái', { min: 1, max: 2 }) },
   };
+}
+
+/** Các trường admin đã xem khi duyệt; đổi một trong số này thì phải duyệt lại. */
+const TRUONG_CAN_DUYET = ['vehicleType', 'licensePlate', 'vehiclePhotos'];
+
+/**
+ * Trạng thái duyệt sau khi tài xế lưu hồ sơ: hồ sơ mới, bị từ chối, hoặc đổi xe / giấy tờ thì chờ duyệt;
+ * chỉ sửa khu vực, bảng giá, giới thiệu thì giữ "đã duyệt".
+ */
+export function trangThaiDuyetSauKhiLuu(cu, giayToCu, moi) {
+  if (!cu || cu.approval !== 'approved') return 'pending';
+  const doi = TRUONG_CAN_DUYET.some((k) => JSON.stringify(cu[k] ?? null) !== JSON.stringify(moi.hoSo[k]))
+    || JSON.stringify(giayToCu?.licensePhotos ?? null) !== JSON.stringify(moi.giayTo.licensePhotos);
+  return doi ? 'pending' : 'approved';
+}
+
+/** Admin duyệt / từ chối hồ sơ đang chờ. Từ chối phải có lý do. */
+export function ketQuaDuyet(hoSo, tham) {
+  if (!hoSo) throw loi('Hồ sơ tài xế không tồn tại.', 'not-found');
+  if (hoSo.approval !== 'pending') throw loi('Hồ sơ này không còn chờ duyệt.');
+  if (typeof tham.dongY !== 'boolean') throw thamSoSai();
+  return tham.dongY
+    ? { approval: 'approved', rejectReason: null }
+    : { approval: 'rejected', rejectReason: chuoi(tham.lyDo, 'Lý do từ chối', { max: 300 }) };
 }
 
 export function yeuCauMoi(tham, now) {

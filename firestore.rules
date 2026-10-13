@@ -82,10 +82,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Hồ sơ tài xế: công khai để sinh viên chọn xe.
+    // Hồ sơ tài xế: công khai để sinh viên chọn xe (app chỉ hiện hồ sơ approval == 'approved').
+    // Ảnh bằng lái ở rieng/giayTo: chỉ chính tài xế và admin Xe dọn trọ.
     match /xe_don_tro/{uid} {
       allow read: if true;
       allow write: if false;
+
+      match /rieng/{docId} {
+        allow read: if signedIn() && (request.auth.uid == uid || laAdmin('xe'));
+        allow write: if false;
+      }
     }
 
     // Đơn đặt xe có địa chỉ nhà: chỉ người đặt và tài xế được giao đọc.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/async_list_view.dart';
+import '../../auth/models/xac_thuc.dart';
 import '../models/booking_xe.dart';
 import '../models/tai_xe.dart';
 import '../services/xe_dich_vu.dart';
@@ -8,13 +9,17 @@ import '../widgets/xe_widgets.dart';
 import 'booking_xe_detail_screen.dart';
 import 'dang_ky_tai_xe_screen.dart';
 import 'dat_xe_screen.dart';
+import 'duyet_tai_xe_screen.dart';
 
 /// Xe dọn trọ (mục 3.3): tìm xe và gửi yêu cầu báo giá, theo dõi đơn của mình,
 /// và khu vực cho tài xế (hồ sơ + đơn khách gửi).
 class XeDonTroScreen extends StatefulWidget {
-  const XeDonTroScreen({required this.dv, super.key});
+  const XeDonTroScreen({required this.dv, this.initialTab = 0, super.key});
 
   final XeDichVu dv;
+
+  /// 0 = Tìm xe, 1 = Đơn của tôi, 2 = Tôi là tài xế.
+  final int initialTab;
 
   @override
   State<XeDonTroScreen> createState() => _XeDonTroScreenState();
@@ -22,7 +27,12 @@ class XeDonTroScreen extends StatefulWidget {
 
 class _XeDonTroScreenState extends State<XeDonTroScreen>
     with SingleTickerProviderStateMixin {
-  late final _tabs = TabController(length: 3, vsync: this);
+  late final _tabs = TabController(
+    length: 3,
+    vsync: this,
+    initialIndex: widget.initialTab,
+  );
+  late final _quyen = widget.dv.xacThuc.quyenAdmin(widget.dv.uid);
   final _donCuaToiKey = GlobalKey<_DonCuaToiTabState>();
 
   @override
@@ -52,6 +62,22 @@ class _XeDonTroScreenState extends State<XeDonTroScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Xe dọn trọ'),
+        actions: [
+          StreamBuilder<QuyenAdmin>(
+            stream: _quyen,
+            builder: (context, snap) => snap.data?.xe == true
+                ? TextButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => DuyetTaiXeScreen(dv: widget.dv),
+                      ),
+                    ),
+                    icon: const Icon(Icons.fact_check_outlined),
+                    label: const Text('Duyệt tài xế'),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabs,
           tabs: const [
@@ -228,12 +254,20 @@ class _TaiXeTabState extends State<_TaiXeTab>
   }
 
   Future<void> _moForm(TaiXe? hoSo) async {
-    final ok = await Navigator.of(context).push<bool>(
+    final approval = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => DangKyTaiXeScreen(dv: widget.dv, hoSo: hoSo),
       ),
     );
-    if (ok == true) _reload();
+    if (approval == null || !mounted) return;
+    _reload();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          approval == 'approved' ? 'Đã lưu hồ sơ.' : 'Đã gửi hồ sơ. Admin duyệt xong bạn sẽ hiện trong danh sách tìm xe.',
+        ),
+      ),
+    );
   }
 
   Future<void> _doi(TaiXe t, bool sanSang) async {
@@ -313,20 +347,26 @@ class _TaiXeTabState extends State<_TaiXeTab>
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Đang nhận đơn mới'),
-                subtitle: Text(
-                  hoSo.sanSang
-                      ? 'Sinh viên đang thấy bạn trong danh sách.'
-                      : 'Bạn đang ẩn khỏi danh sách tìm xe.',
+            if (!hoSo.daDuyet)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: _TrangThaiDuyet(taiXe: hoSo, onSua: () => _moForm(hoSo)),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Đang nhận đơn mới'),
+                  subtitle: Text(
+                    hoSo.sanSang
+                        ? 'Sinh viên đang thấy bạn trong danh sách.'
+                        : 'Bạn đang ẩn khỏi danh sách tìm xe.',
+                  ),
+                  value: hoSo.sanSang,
+                  onChanged: _doiTrangThai ? null : (v) => _doi(hoSo, v),
                 ),
-                value: hoSo.sanSang,
-                onChanged: _doiTrangThai ? null : (v) => _doi(hoSo, v),
               ),
-            ),
             Expanded(
               child: AsyncListView<BookingXe>(
                 future: _don,
@@ -346,6 +386,35 @@ class _TaiXeTabState extends State<_TaiXeTab>
           ],
         );
       },
+    );
+  }
+}
+
+class _TrangThaiDuyet extends StatelessWidget {
+  const _TrangThaiDuyet({required this.taiXe, required this.onSua});
+
+  final TaiXe taiXe;
+  final VoidCallback onSua;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final tuChoi = taiXe.approval == 'rejected';
+    return Card(
+      color: tuChoi ? colors.errorContainer : colors.secondaryContainer,
+      child: ListTile(
+        leading: Icon(tuChoi ? Icons.block : Icons.hourglass_top),
+        title: Text(TaiXe.approvalLabels[taiXe.approval] ?? taiXe.approval),
+        subtitle: Text(
+          tuChoi
+              ? 'Lý do: ${taiXe.rejectReason ?? ''}. Sửa hồ sơ rồi gửi lại.'
+              : 'Admin Xe dọn trọ đang xem hồ sơ xe của bạn. '
+                    'Được duyệt thì bạn mới hiện trong danh sách tìm xe.',
+        ),
+        trailing: tuChoi
+            ? TextButton(onPressed: onSua, child: const Text('Sửa'))
+            : null,
+      ),
     );
   }
 }

@@ -146,15 +146,24 @@ class TaiXeCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: colors.primaryContainer,
-                  child: Icon(
-                    taiXe.vehicleType == 'xe_may'
-                        ? Icons.two_wheeler
-                        : Icons.local_shipping_outlined,
-                    color: colors.onPrimaryContainer,
+                if (taiXe.vehiclePhotos.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox.square(
+                      dimension: 52,
+                      child: NetworkPhoto(taiXe.vehiclePhotos.first),
+                    ),
+                  )
+                else
+                  CircleAvatar(
+                    backgroundColor: colors.primaryContainer,
+                    child: Icon(
+                      taiXe.vehicleType == 'xe_may'
+                          ? Icons.two_wheeler
+                          : Icons.local_shipping_outlined,
+                      color: colors.onPrimaryContainer,
+                    ),
                   ),
-                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -185,7 +194,11 @@ class TaiXeCard extends StatelessWidget {
                         ],
                       ),
                       Text(
-                        '${taiXe.loaiXe} · ${taiXe.area}',
+                        [
+                          taiXe.loaiXe,
+                          if (taiXe.licensePlate.isNotEmpty) taiXe.licensePlate,
+                          taiXe.area,
+                        ].join(' · '),
                         style: theme.textTheme.bodySmall,
                       ),
                     ],

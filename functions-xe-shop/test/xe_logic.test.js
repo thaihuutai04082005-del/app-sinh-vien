@@ -1,18 +1,55 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { chuyenTrangThai, hoSoTaiXe, yeuCauMoi } from '../src/xe_logic.js';
+import {
+  bienSo, chuyenTrangThai, hoSoTaiXe, ketQuaDuyet, trangThaiDuyetSauKhiLuu, yeuCauMoi,
+} from '../src/xe_logic.js';
 
 const NOW = Date.UTC(2026, 9, 13, 3);
 const don = (status) => ({ userId: 'sv', driverId: 'tx', status });
 const loiCo = (re) => (e) => re.test(e.message);
 
-test('hồ sơ tài xế cần loại xe hợp lệ và khu vực', () => {
-  assert.deepEqual(
-    hoSoTaiXe({ vehicleType: 'xe_ba_gac', area: ' Thủ Đức ', priceReference: '150k/chuyến' }),
-    { vehicleType: 'xe_ba_gac', area: 'Thủ Đức', priceReference: '150k/chuyến', description: '' },
+const HO_SO = {
+  vehicleType: 'xe_ba_gac', licensePlate: ' 59c1-234.56 ', vehiclePhotos: ['https://x/xe.jpg'],
+  licensePhotos: ['https://x/bang.jpg'], area: ' Thủ Đức ', priceReference: '150k/chuyến',
+};
+
+test('hồ sơ tài xế: loại xe, biển số, ảnh xe, bằng lái; bằng lái tách riêng', () => {
+  const { hoSo, giayTo } = hoSoTaiXe(HO_SO);
+  assert.equal(hoSo.licensePlate, '59C1-234.56');
+  assert.equal(hoSo.area, 'Thủ Đức');
+  assert.equal(hoSo.licensePhotos, undefined);
+  assert.deepEqual(giayTo, { licensePhotos: ['https://x/bang.jpg'] });
+  assert.equal(bienSo('51F12345'), '51F12345');
+  assert.equal(bienSo('29A-123.45'), '29A-123.45');
+  assert.throws(() => hoSoTaiXe({ ...HO_SO, vehicleType: 'xe_bay' }), loiCo(/Loại xe/));
+  assert.throws(() => hoSoTaiXe({ ...HO_SO, licensePlate: 'abc' }), loiCo(/Biển số/));
+  assert.throws(() => hoSoTaiXe({ ...HO_SO, vehiclePhotos: [] }), loiCo(/ảnh xe/));
+  assert.throws(() => hoSoTaiXe({ ...HO_SO, licensePhotos: [] }), loiCo(/bằng lái/));
+  assert.throws(() => hoSoTaiXe({ ...HO_SO, area: '' }), loiCo(/khu vực/));
+});
+
+test('lưu hồ sơ: mới / bị từ chối thì chờ duyệt; đã duyệt chỉ đổi giá thì giữ duyệt', () => {
+  const moi = hoSoTaiXe(HO_SO);
+  const daDuyet = { ...moi.hoSo, approval: 'approved' };
+  assert.equal(trangThaiDuyetSauKhiLuu(null, null, moi), 'pending');
+  assert.equal(trangThaiDuyetSauKhiLuu({ ...daDuyet, approval: 'rejected' }, moi.giayTo, moi), 'pending');
+  assert.equal(trangThaiDuyetSauKhiLuu(daDuyet, moi.giayTo, hoSoTaiXe({ ...HO_SO, priceReference: '200k' })), 'approved');
+  assert.equal(trangThaiDuyetSauKhiLuu(daDuyet, moi.giayTo, hoSoTaiXe({ ...HO_SO, licensePlate: '51F12345' })), 'pending');
+  assert.equal(
+    trangThaiDuyetSauKhiLuu(daDuyet, moi.giayTo, hoSoTaiXe({ ...HO_SO, licensePhotos: ['https://x/moi.jpg'] })),
+    'pending',
   );
-  assert.throws(() => hoSoTaiXe({ vehicleType: 'xe_bay', area: 'A', priceReference: 'B' }), loiCo(/Loại xe/));
-  assert.throws(() => hoSoTaiXe({ vehicleType: 'xe_may', area: '', priceReference: 'B' }), loiCo(/khu vực/));
+});
+
+test('admin duyệt: chỉ hồ sơ đang chờ, từ chối cần lý do', () => {
+  assert.deepEqual(ketQuaDuyet({ approval: 'pending' }, { dongY: true }), { approval: 'approved', rejectReason: null });
+  assert.deepEqual(
+    ketQuaDuyet({ approval: 'pending' }, { dongY: false, lyDo: 'Ảnh xe mờ' }),
+    { approval: 'rejected', rejectReason: 'Ảnh xe mờ' },
+  );
+  assert.throws(() => ketQuaDuyet({ approval: 'pending' }, { dongY: false }), loiCo(/lý do/i));
+  assert.throws(() => ketQuaDuyet({ approval: 'approved' }, { dongY: true }), loiCo(/không còn chờ/));
+  assert.throws(() => ketQuaDuyet(null, { dongY: true }), loiCo(/không tồn tại/));
 });
 
 test('yêu cầu mới: cần ảnh, số điện thoại, giờ trong 90 ngày', () => {

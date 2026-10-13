@@ -9,13 +9,17 @@ import '../models/tai_xe.dart';
 abstract interface class XeService {
   Future<List<TaiXe>> danhSachTaiXe();
   Future<TaiXe?> hoSoTaiXe(String uid);
-  Future<void> luuHoSoTaiXe({
-    required String vehicleType,
-    required String area,
-    required String priceReference,
-    String description,
-  });
+
+  /// Lưu hồ sơ, trả về trạng thái duyệt sau khi lưu (pending | approved).
+  Future<String> luuHoSoTaiXe(HoSoTaiXeNhap hoSo);
   Future<void> doiTrangThaiTaiXe(String status);
+
+  /// Ảnh bằng lái (chỉ chính tài xế và admin Xe dọn trọ đọc được).
+  Future<List<String>> giayTo(String driverId);
+
+  /// Admin: hồ sơ tài xế đang chờ duyệt.
+  Future<List<TaiXe>> hoSoChoDuyet();
+  Future<void> duyetTaiXe(String driverId, {required bool dongY, String? lyDo});
 
   /// Đơn mình đặt (sinh viên).
   Future<List<BookingXe>> donCuaToi();
@@ -53,13 +57,11 @@ class FirebaseXeService implements XeService {
   @override
   Future<List<TaiXe>> danhSachTaiXe() async {
     final snap = await _taiXe
+        .where('approval', isEqualTo: 'approved')
         .where('status', isEqualTo: 'available')
         .limit(100)
         .get();
-    return [
-      for (final d in snap.docs)
-        if (d.data()['driverVerified'] == true) TaiXe.fromMap(d.data()),
-    ];
+    return [for (final d in snap.docs) TaiXe.fromMap(d.data())];
   }
 
   @override
@@ -69,16 +71,39 @@ class FirebaseXeService implements XeService {
   }
 
   @override
-  Future<void> luuHoSoTaiXe({
-    required String vehicleType,
-    required String area,
-    required String priceReference,
-    String description = '',
-  }) => _api.goi('luuHoSoTaiXe', {
-    'vehicleType': vehicleType,
-    'area': area,
-    'priceReference': priceReference,
-    'description': description,
+  Future<String> luuHoSoTaiXe(HoSoTaiXeNhap hoSo) async =>
+      (await _api.goi('luuHoSoTaiXe', hoSo.toMap()))['approval'] as String? ??
+      'pending';
+
+  @override
+  Future<List<String>> giayTo(String driverId) async {
+    final d = await _taiXe
+        .doc(driverId)
+        .collection('rieng')
+        .doc('giayTo')
+        .get();
+    final l = d.data()?['licensePhotos'];
+    return l is List ? l.whereType<String>().toList() : const [];
+  }
+
+  @override
+  Future<List<TaiXe>> hoSoChoDuyet() async {
+    final snap = await _taiXe
+        .where('approval', isEqualTo: 'pending')
+        .limit(100)
+        .get();
+    return [for (final d in snap.docs) TaiXe.fromMap(d.data())];
+  }
+
+  @override
+  Future<void> duyetTaiXe(
+    String driverId, {
+    required bool dongY,
+    String? lyDo,
+  }) => _api.goi('duyetTaiXe', {
+    'driverId': driverId,
+    'dongY': dongY,
+    'lyDo': ?lyDo,
   });
 
   @override

@@ -11,6 +11,8 @@ import 'package:app_sinh_vien/features/shop/services/product_service.dart';
 import 'package:app_sinh_vien/features/shop/services/shop_dich_vu.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../fakes/xac_thuc_gia.dart';
+
 final png = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
 );
@@ -185,12 +187,18 @@ class FakeDonHangService implements DonHangService {
   }
 }
 
-ShopDichVu shopDv(KhoGia kho, String uid, {LuuGioHang? luu}) => ShopDichVu(
+ShopDichVu shopDv(
+  KhoGia kho,
+  String uid, {
+  LuuGioHang? luu,
+  XacThucGia? xacThuc,
+}) => ShopDichVu(
   uid: uid,
   products: FakeProductService(kho, uid),
   donHang: FakeDonHangService(kho, uid),
   gioHang: GioHang(uid: uid, luu: luu ?? BoNhoLuuGioHang()),
   storage: InstantStorage(),
+  xacThuc: xacThuc ?? XacThucGia.day(),
   pickImages: pickOne,
 );
 

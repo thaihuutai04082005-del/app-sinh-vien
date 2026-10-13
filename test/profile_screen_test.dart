@@ -1,9 +1,13 @@
+import 'package:app_sinh_vien/features/auth/models/xac_thuc.dart';
 import 'package:app_sinh_vien/features/auth/screens/profile_screen.dart';
+import 'package:app_sinh_vien/features/auth/screens/xac_thuc_sdt_screen.dart';
 import 'package:app_sinh_vien/features/auth/services/auth_service.dart';
 import 'package:app_sinh_vien/shared/models/app_user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'fakes/xac_thuc_gia.dart';
 
 class _FakeUser implements User {
   @override
@@ -51,7 +55,12 @@ class _FakeAuthService extends AuthService {
 void main() {
   testWidgets('Hiển thị hồ sơ đã tải', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: ProfileScreen(authService: _FakeAuthService())),
+      MaterialApp(
+        home: ProfileScreen(
+          authService: _FakeAuthService(),
+          xacThucService: XacThucGia(),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
     expect(find.text('Thái Hữu Tài'), findsOneWidget);
@@ -62,17 +71,21 @@ void main() {
   testWidgets('Số điện thoại sai bị từ chối, đúng thì lưu', (tester) async {
     final auth = _FakeAuthService();
     await tester.pumpWidget(
-      MaterialApp(home: ProfileScreen(authService: auth)),
+      MaterialApp(
+        home: ProfileScreen(authService: auth, xacThucService: XacThucGia()),
+      ),
     );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).last, '12ab');
+    await tester.ensureVisible(find.text('Lưu thay đổi'));
     await tester.tap(find.text('Lưu thay đổi'));
     await tester.pump();
     expect(find.text('Số điện thoại không hợp lệ'), findsOneWidget);
     expect(auth.saved, isNull);
 
     await tester.enterText(find.byType(TextFormField).last, '0987654321');
+    await tester.ensureVisible(find.text('Lưu thay đổi'));
     await tester.tap(find.text('Lưu thay đổi'));
     await tester.pumpAndSettle();
     expect(auth.saved, {'name': 'Thái Hữu Tài', 'phone': '0987654321'});
@@ -81,9 +94,12 @@ void main() {
   testWidgets('Nút đăng xuất gọi signOut', (tester) async {
     final auth = _FakeAuthService();
     await tester.pumpWidget(
-      MaterialApp(home: ProfileScreen(authService: auth)),
+      MaterialApp(
+        home: ProfileScreen(authService: auth, xacThucService: XacThucGia()),
+      ),
     );
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Đăng xuất'));
     await tester.tap(find.text('Đăng xuất'));
     await tester.pump();
     expect(auth.signedOut, isTrue);
@@ -92,10 +108,55 @@ void main() {
   testWidgets('Báo lỗi và cho thử lại khi tải thất bại', (tester) async {
     final auth = _FakeAuthService()..failLoad = true;
     await tester.pumpWidget(
-      MaterialApp(home: ProfileScreen(authService: auth)),
+      MaterialApp(
+        home: ProfileScreen(authService: auth, xacThucService: XacThucGia()),
+      ),
     );
     await tester.pumpAndSettle();
     expect(find.text('Không tải được hồ sơ'), findsOneWidget);
     expect(find.text('Thử lại'), findsOneWidget);
+  });
+
+  testWidgets('Hiện trạng thái xác thực và lối vào hợp tác', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProfileScreen(
+          authService: _FakeAuthService(),
+          xacThucService: XacThucGia(
+            trangThai: const XacThuc(
+              sdt: '0912345678',
+              sdtDaXacThuc: true,
+              danhTinh: 'cho_duyet',
+            ),
+            quyen: const QuyenAdmin(danhTinh: true),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Đã xác thực · 0912345678'), findsOneWidget);
+    expect(find.text('Đang chờ admin duyệt'), findsOneWidget);
+    expect(find.text('Duyệt danh tính'), findsOneWidget);
+    expect(find.text('Làm tài xế dọn trọ'), findsOneWidget);
+    expect(find.text('Bán đồ trên Shop đồ rẻ'), findsOneWidget);
+    expect(find.text('Cho thuê phòng trọ'), findsOneWidget);
+    expect(find.text('Mở quán ăn'), findsOneWidget);
+  });
+
+  testWidgets('Chưa xác thực thì bấm vào mở màn OTP', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProfileScreen(
+          authService: _FakeAuthService(),
+          xacThucService: XacThucGia(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Duyệt danh tính'), findsNothing);
+    await tester.ensureVisible(find.text('Số điện thoại (OTP)'));
+    await tester.tap(find.text('Số điện thoại (OTP)'));
+    await tester.pumpAndSettle();
+    expect(find.byType(XacThucSdtScreen), findsOneWidget);
   });
 }

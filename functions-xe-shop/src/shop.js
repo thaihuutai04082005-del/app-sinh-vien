@@ -12,6 +12,10 @@ const orders = () => getFirestore().collection('orders');
 const DON_CHO_TOI_DA = 10;
 
 export async function dangSanPham(nd, tham) {
+  // Ai cũng bán được (như Vinted), chỉ cần số điện thoại đã OTP để người mua liên hệ được.
+  if (!nd.xacThuc.sdtDaXacThuc || !nd.xacThuc.sdt) {
+    throw loi('Bạn cần xác thực số điện thoại (OTP) ở tab Cá nhân trước khi đăng bán.');
+  }
   const sp = sanPham(tham);
   const now = Date.now();
   const ref = products().doc();
