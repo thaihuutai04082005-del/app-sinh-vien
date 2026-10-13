@@ -83,8 +83,10 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Đơn đặt xe có địa chỉ nhà: chỉ người đặt và tài xế được giao đọc.
     match /booking_xe/{id} {
-      allow read: if true;
+      allow read: if request.auth != null
+        && (resource.data.userId == request.auth.uid || resource.data.driverId == request.auth.uid);
       allow create: if isCountedPost(id, 'userId')
         && request.resource.data.keys().hasOnly(['userId', 'driverId', 'fromAddress', 'toAddress',
                                                  'itemPhotos', 'quotedPrice', 'scheduledAt', 'status',

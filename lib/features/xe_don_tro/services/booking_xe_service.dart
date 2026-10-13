@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/constants/app_constants.dart';
 
@@ -26,7 +27,11 @@ class FirestoreBookingXeService implements BookingXeService {
 
   @override
   Future<List<BookingXe>> getDanhSachYeuCau() async {
+    // Rules chỉ cho đọc đơn của chính mình nên truy vấn phải lọc theo uid.
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return [];
     final snapshot = await _bookings
+        .where('userId', isEqualTo: uid)
         .orderBy('createdAt', descending: true)
         .limit(100)
         .get();
