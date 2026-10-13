@@ -1,0 +1,223 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/utils/formatters.dart';
+import '../models/don_hang.dart';
+import '../models/gio_hang.dart';
+import '../services/shop_dich_vu.dart';
+import 'don_hang_list_screen.dart';
+
+/// Thanh toán: thông tin nhận hàng, cách nhận, thanh toán khi nhận (COD).
+/// Server tính lại giá, trừ tồn kho và tách đơn theo shop.
+class DatHangScreen extends StatefulWidget {
+  const DatHangScreen({
+    required this.dv,
+    required this.dong,
+    this.tuGioHang = false,
+    super.key,
+  });
+
+  final ShopDichVu dv;
+  final List<DongGio> dong;
+
+  /// Đặt từ giỏ thì đặt xong bỏ các dòng đó khỏi giỏ.
+  final bool tuGioHang;
+
+  @override
+  State<DatHangScreen> createState() => _DatHangScreenState();
+}
+
+class _DatHangScreenState extends State<DatHangScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _ten = TextEditingController();
+  final _sdt = TextEditingController();
+  final _diaChi = TextEditingController();
+  final _ghiChu = TextEditingController();
+  String _cachNhan = 'giao_tan_tro';
+  bool _dangGui = false;
+  String? _loi;
+
+  late final _soShop = widget.dong.map((d) => d.shopId).toSet().length;
+  late final num _tamTinh = widget.dong.fold<num>(
+    0,
+    (s, d) => s + d.price * d.quantity,
+  );
+
+  @override
+  void dispose() {
+    _ten.dispose();
+    _sdt.dispose();
+    _diaChi.dispose();
+    _ghiChu.dispose();
+    super.dispose();
+  }
+
+  Future<void> _dat() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _dangGui = true;
+      _loi = null;
+    });
+    try {
+      final ids = await widget.dv.donHang.datHang(
+        widget.dong,
+        ThongTinNhan(
+          receiverName: _ten.text.trim(),
+          phone: _sdt.text.trim(),
+          deliveryMethod: _cachNhan,
+          address: _diaChi.text.trim(),
+          note: _ghiChu.text.trim(),
+        ),
+      );
+      if (widget.tuGioHang) {
+        widget.dv.gioHang.xoaNhieu(widget.dong.map((d) => d.khoa));
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ids.length > 1
+                ? 'Đã đặt ${ids.length} đơn (mỗi shop một đơn).'
+                : 'Đã đặt hàng. Chờ shop xác nhận.',
+          ),
+        ),
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => DonHangListScreen(dv: widget.dv, laNguoiBan: false),
+        ),
+      );
+    } catch (e) {
+      if (mounted) setState(() => _loi = '$e');
+    } finally {
+      if (mounted) setState(() => _dangGui = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Đặt hàng')),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            for (final d in widget.dong)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  d.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  [
+                    if (d.shopName.isNotEmpty) d.shopName,
+                    if (d.size.isNotEmpty) 'Size ${d.size}',
+                    'x${d.quantity}',
+                  ].join(' · '),
+                ),
+                trailing: Text(formatPrice(d.price * d.quantity)),
+              ),
+            const Divider(),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _ten,
+              decoration: const InputDecoration(labelText: 'Tên người nhận'),
+              validator: (v) =>
+                  (v ?? '').trim().isEmpty ? 'Nhập tên người nhận' : null,
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _sdt,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: 'Số điện thoại'),
+              validator: (v) {
+                final s = (v ?? '').replaceAll(RegExp(r'[\s.-]'), '');
+                return RegExp(r'^(0|\+84)\d{9}$').hasMatch(s)
+                    ? null
+                    : 'Số điện thoại không hợp lệ';
+              },
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Cách nhận hàng',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            RadioGroup<String>(
+              groupValue: _cachNhan,
+              onChanged: (v) => setState(() => _cachNhan = v!),
+              child: Column(
+                children: [
+                  for (final e in DonHang.deliveryLabels.entries)
+                    RadioListTile<String>(
+                      contentPadding: EdgeInsets.zero,
+                      value: e.key,
+                      title: Text(e.value),
+                    ),
+                ],
+              ),
+            ),
+            TextFormField(
+              controller: _diaChi,
+              decoration: InputDecoration(
+                labelText: _cachNhan == 'giao_tan_tro'
+                    ? 'Địa chỉ nhận hàng'
+                    : 'Nơi hẹn lấy (không bắt buộc)',
+              ),
+              validator: (v) =>
+                  _cachNhan == 'giao_tan_tro' && (v ?? '').trim().isEmpty
+                  ? 'Nhập địa chỉ nhận hàng'
+                  : null,
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _ghiChu,
+              maxLength: 300,
+              decoration: const InputDecoration(
+                labelText: 'Lời nhắn cho shop (không bắt buộc)',
+              ),
+            ),
+            const Card(
+              child: ListTile(
+                leading: Icon(Icons.payments_outlined),
+                title: Text('Thanh toán khi nhận hàng (COD)'),
+                subtitle: Text(
+                  'Shop phải xác nhận trong 2 ngày, quá hạn đơn tự hủy.',
+                ),
+              ),
+            ),
+            if (_soShop > 1)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Giỏ có hàng của $_soShop shop, sẽ tách thành $_soShop đơn.',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            if (_loi != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  _loi!,
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: _dangGui ? null : _dat,
+              child: Text(
+                _dangGui
+                    ? 'Đang đặt...'
+                    : 'Đặt hàng · ${formatPrice(_tamTinh)}',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

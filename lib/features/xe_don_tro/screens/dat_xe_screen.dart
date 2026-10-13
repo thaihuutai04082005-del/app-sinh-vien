@@ -1,28 +1,19 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/services/image_storage_service.dart';
 import '../../../shared/widgets/image_source_field.dart';
-import '../../../shared/widgets/image_upload_field.dart';
 import '../../../shared/widgets/video_upload_field.dart';
 import '../models/booking_xe.dart';
-import '../services/booking_xe_service.dart';
-import 'booking_xe_detail_screen.dart';
+import '../models/tai_xe.dart';
+import '../services/xe_dich_vu.dart';
+import '../widgets/xe_widgets.dart';
 
-/// Form đặt xe dọn trọ: điểm đi, điểm đến, thời gian và ảnh đồ đạc
-/// để tài xế báo giá trọn gói (mục 3.3). Lưu xong thì pop về với [BookingXe].
+/// Form đặt xe dọn trọ gửi cho một tài xế: điểm đi, điểm đến, thời gian và ảnh
+/// đồ đạc để tài xế báo giá trọn gói (mục 3.3). Gửi xong thì pop về với id đơn.
 class DatXeScreen extends StatefulWidget {
-  const DatXeScreen({
-    required this.service,
-    required this.storage,
-    this.pickImages,
-    this.pickVideo,
-    super.key,
-  });
+  const DatXeScreen({required this.dv, required this.taiXe, super.key});
 
-  final BookingXeService service;
-  final ImageStorageService storage;
-  final ImagePickerCallback? pickImages;
-  final VideoPickerCallback? pickVideo;
+  final XeDichVu dv;
+  final TaiXe taiXe;
 
   @override
   State<DatXeScreen> createState() => _DatXeScreenState();
@@ -32,6 +23,8 @@ class _DatXeScreenState extends State<DatXeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fromController = TextEditingController();
   final _toController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _noteController = TextEditingController();
   DateTime? _scheduledAt;
   List<String> _itemPhotos = const [];
   bool _isUploading = false;
@@ -44,6 +37,8 @@ class _DatXeScreenState extends State<DatXeScreen> {
   void dispose() {
     _fromController.dispose();
     _toController.dispose();
+    _phoneController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -52,7 +47,7 @@ class _DatXeScreenState extends State<DatXeScreen> {
     final date = await showDatePicker(
       context: context,
       firstDate: now,
-      lastDate: now.add(const Duration(days: 90)),
+      lastDate: now.add(const Duration(days: 89)),
       initialDate: _scheduledAt ?? now,
     );
     if (date == null || !mounted) return;
@@ -77,23 +72,21 @@ class _DatXeScreenState extends State<DatXeScreen> {
     setState(() => _showPhotoError = _itemPhotos.isEmpty);
     if (!formValid || _itemPhotos.isEmpty || _scheduledAt == null) return;
 
-    final booking = BookingXe(
-      id: '',
-      userId: '', // Service gán uid người gửi.
-      driverId: '', // Gán khi sinh viên chọn tài xế.
-      fromAddress: _fromController.text.trim(),
-      toAddress: _toController.text.trim(),
-      itemPhotos: _itemPhotos,
-      quotedPrice: null,
-      scheduledAt: _scheduledAt!,
-      status: 'pending',
-      videos: _videos,
-    );
-
     setState(() => _isSaving = true);
     try {
-      final created = await widget.service.guiYeuCau(booking);
-      if (mounted) Navigator.of(context).pop(created);
+      final id = await widget.dv.xe.guiYeuCau(
+        YeuCauXe(
+          driverId: widget.taiXe.driverId,
+          fromAddress: _fromController.text.trim(),
+          toAddress: _toController.text.trim(),
+          scheduledAt: _scheduledAt!,
+          contactPhone: _phoneController.text.trim(),
+          itemPhotos: _itemPhotos,
+          videos: _videos,
+          note: _noteController.text.trim(),
+        ),
+      );
+      if (mounted) Navigator.of(context).pop(id);
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -111,6 +104,8 @@ class _DatXeScreenState extends State<DatXeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            TaiXeCard(taiXe: widget.taiXe),
+            const SizedBox(height: 18),
             TextFormField(
               controller: _fromController,
               decoration: const InputDecoration(
@@ -152,14 +147,40 @@ class _DatXeScreenState extends State<DatXeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Số điện thoại liên hệ',
+                prefixIcon: Icon(Icons.call_outlined),
+                helperText: 'Tài xế gọi số này để hẹn giờ.',
+              ),
+              validator: (v) {
+                final s = (v ?? '').replaceAll(RegExp(r'[\s.-]'), '');
+                return RegExp(r'^(0|\+84)\d{9}$').hasMatch(s)
+                    ? null
+                    : 'Số điện thoại không hợp lệ';
+              },
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _noteController,
+              maxLines: 2,
+              maxLength: 500,
+              decoration: const InputDecoration(
+                labelText: 'Ghi chú cho tài xế (không bắt buộc)',
+                hintText: 'Tầng mấy, có thang máy không, đồ dễ vỡ...',
+              ),
+            ),
+            const SizedBox(height: 12),
             ImageSourceField(
-              storage: widget.storage,
+              storage: widget.dv.storage,
               folder: 'booking_xe',
               label: 'Ảnh đồ đạc',
               helperText: 'Chụp toàn bộ đồ cần chuyển để tài xế báo giá trọn gói chính xác.',
               startWithLink: false,
-              pickImages: widget.pickImages,
+              pickImages: widget.dv.pickImages,
               onChanged: (urls, isUploading) => setState(() {
                 _itemPhotos = urls;
                 _isUploading = isUploading;
@@ -176,10 +197,10 @@ class _DatXeScreenState extends State<DatXeScreen> {
               ),
             const SizedBox(height: 22),
             VideoUploadField(
-              storage: widget.storage,
+              storage: widget.dv.storage,
               folder: 'booking_xe',
               helperText: 'Quay một vòng phòng để tài xế thấy hết đồ cần chuyển (khoảng 30 giây).',
-              pickVideo: widget.pickVideo,
+              pickVideo: widget.dv.pickVideo,
               onChanged: (urls, isUploading) => setState(() {
                 _videos = urls;
                 _isUploadingVideo = isUploading;

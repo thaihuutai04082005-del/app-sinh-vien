@@ -1,195 +1,153 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/services/image_storage_service.dart';
-import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/async_list_view.dart';
-import '../../../shared/widgets/image_gallery.dart';
-import '../../../shared/widgets/image_upload_field.dart';
 import '../models/product.dart';
-import '../services/product_service.dart';
+import '../services/shop_dich_vu.dart';
+import '../widgets/shop_widgets.dart';
 import 'dang_san_pham_screen.dart';
+import 'don_hang_list_screen.dart';
+import 'gio_hang_screen.dart';
+import 'kenh_nguoi_ban_screen.dart';
 import 'san_pham_detail_screen.dart';
 
-/// Danh sách sản phẩm mọi người đã đăng + nút đăng sản phẩm mới (mục 3.4).
+/// Sảnh Shop đồ rẻ (mục 3.4): duyệt theo danh mục / mức giá, giỏ hàng,
+/// đơn mua và kênh người bán.
 class ShopScreen extends StatefulWidget {
-  const ShopScreen({
-    required this.service,
-    required this.storage,
-    this.pickImages,
-    super.key,
-  });
+  const ShopScreen({required this.dv, super.key});
 
-  final ProductService service;
-  final ImageStorageService storage;
-  final ImagePickerCallback? pickImages;
+  final ShopDichVu dv;
 
   @override
   State<ShopScreen> createState() => _ShopScreenState();
 }
 
+const _mucGia = {100000: 'Dưới 100k', 150000: 'Dưới 150k'};
+
 class _ShopScreenState extends State<ShopScreen> {
-  late Future<List<Product>> _products = widget.service.getDanhSachSanPham();
+  late Future<List<Product>> _tatCa = widget.dv.products.getDanhSachSanPham();
+  late Future<List<Product>> _hienThi = _loc();
+  String? _danhMuc;
+  int? _giaToiDa;
+
+  Future<List<Product>> _loc() => _tatCa.then(
+    (ds) => [
+      for (final p in ds)
+        if ((_danhMuc == null || p.category == _danhMuc) &&
+            (_giaToiDa == null || p.price < _giaToiDa!))
+          p,
+    ],
+  );
 
   Future<void> _reload() async {
-    final future = widget.service.getDanhSachSanPham();
+    final future = widget.dv.products.getDanhSachSanPham();
     setState(() {
-      _products = future;
+      _tatCa = future;
+      _hienThi = _loc();
     });
     await future.catchError((_) => <Product>[]);
   }
 
-  void _openDetail(Product product) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => SanPhamDetailScreen(product: product),
-      ),
-    );
+  Future<void> _mo(Widget man) async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => man));
+    _reload();
   }
 
   Future<void> _openCreate() async {
-    final created = await Navigator.of(context).push<Product>(
-      MaterialPageRoute(
-        builder: (_) => DangSanPhamScreen(
-          service: widget.service,
-          storage: widget.storage,
-          pickImages: widget.pickImages,
-        ),
-      ),
+    final id = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => DangSanPhamScreen(dv: widget.dv)),
     );
-    if (created == null || !mounted) return;
-    _reload();
+    if (id == null || !mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Đã đăng sản phẩm.')));
-    _openDetail(created);
+    await _mo(SanPhamDetailScreen(dv: widget.dv, productId: id));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Shop đồ rẻ')),
+      appBar: AppBar(
+        title: const Text('Shop đồ rẻ'),
+        actions: [
+          IconButton(
+            tooltip: 'Đơn mua',
+            onPressed: () =>
+                _mo(DonHangListScreen(dv: widget.dv, laNguoiBan: false)),
+            icon: const Icon(Icons.receipt_long_outlined),
+          ),
+          IconButton(
+            tooltip: 'Kênh người bán',
+            onPressed: () => _mo(KenhNguoiBanScreen(dv: widget.dv)),
+            icon: const Icon(Icons.storefront_outlined),
+          ),
+          NutGioHang(
+            gioHang: widget.dv.gioHang,
+            onPressed: () => _mo(GioHangScreen(dv: widget.dv)),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreate,
         icon: const Icon(Icons.add_a_photo_outlined),
         label: const Text('Đăng sản phẩm'),
       ),
-      body: AsyncListView<Product>(
-        future: _products,
-        onRefresh: _reload,
-        gridMaxExtent: 220,
-        gridFooterHeight: 70,
-        emptyIcon: Icons.shopping_bag_outlined,
-        emptyText: 'Chưa có sản phẩm nào. Bấm "Đăng sản phẩm" để bắt đầu.',
-        itemBuilder: (context, product) =>
-            _ProductCard(product: product, onTap: () => _openDetail(product)),
-      ),
-    );
-  }
-}
-
-class _ProductCard extends StatelessWidget {
-  const _ProductCard({required this.product, required this.onTap});
-
-  final Product product;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (product.images.isNotEmpty)
-                    NetworkPhoto(product.images.first),
-                  if (product.images.length > 1)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: _Badge(
-                        icon: Icons.photo_library_outlined,
-                        text: '${product.images.length}',
-                      ),
-                    ),
-                  if (product.videos.isNotEmpty)
-                    const Positioned(
-                      right: 8,
-                      bottom: 8,
-                      child: _Badge(icon: Icons.play_arrow, text: 'Video'),
-                    ),
-                  if (product.status == 'out_of_stock')
-                    const Positioned(
-                      left: 8,
-                      top: 8,
-                      child: _Badge(text: 'Hết hàng'),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatPrice(product.price),
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w800,
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+            child: Row(
+              children: [
+                for (final (key, label) in [
+                  (null, 'Tất cả'),
+                  ...productCategoryLabels.entries.map((e) => (e.key, e.value)),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(label),
+                      selected: _danhMuc == key,
+                      onSelected: (_) => setState(() {
+                        _danhMuc = key;
+                        _hienThi = _loc();
+                      }),
                     ),
                   ),
-                ],
+                const SizedBox(width: 8),
+                for (final e in _mucGia.entries)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(e.value),
+                      selected: _giaToiDa == e.key,
+                      onSelected: (chon) => setState(() {
+                        _giaToiDa = chon ? e.key : null;
+                        _hienThi = _loc();
+                      }),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: AsyncListView<Product>(
+              future: _hienThi,
+              onRefresh: _reload,
+              gridMaxExtent: 220,
+              gridFooterHeight: 70,
+              emptyIcon: Icons.shopping_bag_outlined,
+              emptyText: _danhMuc == null && _giaToiDa == null
+                  ? 'Chưa có sản phẩm nào. Bấm "Đăng sản phẩm" để bắt đầu.'
+                  : 'Không có sản phẩm phù hợp bộ lọc.',
+              itemBuilder: (context, product) => ProductCard(
+                product: product,
+                onTap: () => _mo(
+                  SanPhamDetailScreen(dv: widget.dv, productId: product.id),
+                ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.text, this.icon});
-
-  final String text;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 14, color: Colors.white),
-              const SizedBox(width: 4),
-            ],
-            Text(
-              text,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/image_storage_service.dart';
 import '../shop/screens/shop_screen.dart';
-import '../shop/services/product_service.dart';
+import '../shop/services/shop_dich_vu.dart';
 import '../quan_an/screens/quan_an_routes.dart';
 import '../quan_an/screens/quan_an_shell.dart';
 import '../quan_an/services/quan_an_dich_vu.dart';
@@ -13,7 +13,7 @@ import '../tro/services/tro_dich_vu.dart';
 import '../vui_choi/screens/vui_choi_list_screen.dart';
 import '../vui_choi/services/vui_choi_service.dart';
 import '../xe_don_tro/screens/xe_don_tro_screen.dart';
-import '../xe_don_tro/services/booking_xe_service.dart';
+import '../xe_don_tro/services/xe_dich_vu.dart';
 
 class _Module {
   const _Module(this.label, this.subtitle, this.icon, this.color, this.builder);
@@ -57,20 +57,14 @@ class _HomeScreenState extends State<HomeScreen> {
       'Báo giá rõ ràng',
       Icons.local_shipping_outlined,
       const Color(0xFF3578B8),
-      () => XeDonTroScreen(
-        service: FirestoreBookingXeService(),
-        storage: FirebaseImageStorageService(),
-      ),
+      () => XeDonTroScreen(dv: XeDichVu.firebase()),
     ),
     _Module(
       'Shop đồ rẻ',
       'Đồ hay, giá hời',
       Icons.checkroom_outlined,
       const Color(0xFFC6537A),
-      () => ShopScreen(
-        service: FirestoreProductService(),
-        storage: FirebaseImageStorageService(),
-      ),
+      () => ShopScreen(dv: ShopDichVu.firebase()),
     ),
     _Module(
       'Vui chơi',
