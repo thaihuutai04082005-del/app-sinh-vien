@@ -130,16 +130,20 @@ export async function thaoTacDon(nd, tham) {
   return { id };
 }
 
-/** Chạy định kỳ: hủy đơn shop không xác nhận đúng hạn, trả lại tồn kho. */
-export async function huyDonQuaHan() {
+/**
+ * Hủy các đơn của người gọi (là người mua hoặc shop) đã quá hạn shop xác nhận, trả lại tồn kho.
+ * App gọi mỗi khi mở danh sách đơn, nên không cần job hẹn giờ.
+ */
+export async function xuLyDonQuaHan(nd) {
   const now = Date.now();
-  const qua = await orders()
+  const [mua, ban] = await Promise.all(['buyerId', 'shopId'].map((truong) => orders()
+    .where(truong, '==', nd.uid)
     .where('status', '==', 'pending_confirmation')
-    .where('confirmDeadline', '<=', Timestamp.fromMillis(now))
-    .limit(200)
-    .get();
+    .limit(100)
+    .get()));
+  const qua = [...mua.docs, ...ban.docs].filter((d) => d.get('confirmDeadline')?.toMillis() <= now);
   let soDon = 0;
-  for (const doc of qua.docs) {
+  for (const doc of qua) {
     await getFirestore().runTransaction(async (tx) => {
       const snap = await tx.get(doc.ref);
       const don = snap.data();
@@ -151,5 +155,5 @@ export async function huyDonQuaHan() {
       soDon++;
     });
   }
-  return soDon;
+  return { soDon };
 }

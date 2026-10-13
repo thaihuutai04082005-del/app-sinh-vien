@@ -39,6 +39,11 @@ class FirebaseDonHangService implements DonHangService {
 
   Future<List<DonHang>> _theo(String truong) async {
     if (uid.isEmpty) return [];
+    // Đơn quá hạn shop xác nhận được hủy lúc mở danh sách (không có job hẹn giờ).
+    // Lỗi ở bước này không chặn việc xem đơn.
+    try {
+      await _api.goi('xuLyDonQuaHan');
+    } catch (_) {}
     final snap = await _orders
         .where(truong, isEqualTo: uid)
         .orderBy('createdAt', descending: true)

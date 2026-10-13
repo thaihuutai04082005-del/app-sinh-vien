@@ -2,7 +2,6 @@
 // app chỉ đọc (theo firestore.rules) và gọi 2 callable dưới đây.
 import { initializeApp } from 'firebase-admin/app';
 import { onCall } from 'firebase-functions/v2/https';
-import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { thamSoSai } from './src/loi.js';
 import { nguoiDung } from './src/tai_khoan.js';
 import * as xe from './src/xe.js';
@@ -33,11 +32,7 @@ export const shopApi = onCall({ region: REGION }, async (request) => {
     case 'xoaSanPham': return shop.xoaSanPham(nd, tham);
     case 'datHang': return shop.datHang(nd, tham);
     case 'thaoTacDon': return shop.thaoTacDon(nd, tham);
+    case 'xuLyDonQuaHan': return shop.xuLyDonQuaHan(nd);
     default: throw thamSoSai('Hành động không hợp lệ.');
   }
 });
-
-export const shopHuyDonQuaHan = onSchedule(
-  { schedule: 'every 60 minutes', region: REGION, timeZone: 'Asia/Ho_Chi_Minh' },
-  async () => { await shop.huyDonQuaHan(); },
-);

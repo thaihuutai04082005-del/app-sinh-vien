@@ -431,20 +431,6 @@
           "order": "DESCENDING"
         }
       ]
-    },
-    {
-      "collectionGroup": "orders",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "confirmDeadline",
-          "order": "ASCENDING"
-        }
-      ]
     }
   ],
   "fieldOverrides": []
