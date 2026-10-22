@@ -121,14 +121,17 @@ class _TimXeTabState extends State<_TimXeTab>
   late Future<List<TaiXe>> _taiXe = _tai();
   String? _loai;
 
+  /// Sắp xếp để so sánh (mục 3.3): null = mặc định | gia | danhGia.
+  String? _xep;
+
   Future<List<TaiXe>> _tai() async {
     final ds = await widget.dv.xe.danhSachTaiXe();
-    return [
+    return xepTaiXe([
       for (final t in ds)
         if (t.driverId != widget.dv.uid &&
             (_loai == null || t.vehicleType == _loai))
           t,
-    ];
+    ], _xep);
   }
 
   Future<void> _reload() async {
@@ -163,6 +166,22 @@ class _TimXeTabState extends State<_TimXeTab>
                     selected: _loai == key,
                     onSelected: (_) {
                       _loai = key;
+                      _reload();
+                    },
+                  ),
+                ),
+              const SizedBox(width: 8),
+              for (final (key, label) in [
+                ('gia', 'Giá chuyến thấp'),
+                ('danhGia', 'Đánh giá cao'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(label),
+                    selected: _xep == key,
+                    onSelected: (chon) {
+                      _xep = chon ? key : null;
                       _reload();
                     },
                   ),
@@ -417,4 +436,24 @@ class _TrangThaiDuyet extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Sắp xếp tài xế để so sánh: `gia` — giá theo chuyến thấp trước (chưa có giá chuyến xếp cuối);
+/// `danhGia` — điểm trung bình cao trước, bằng điểm thì nhiều lượt hơn trước.
+List<TaiXe> xepTaiXe(List<TaiXe> ds, String? theo) {
+  final kq = List.of(ds);
+  switch (theo) {
+    case 'gia':
+      kq.sort(
+        (a, b) => (a.priceTrip ?? double.infinity).compareTo(
+          b.priceTrip ?? double.infinity,
+        ),
+      );
+    case 'danhGia':
+      kq.sort((a, b) {
+        final d = b.diem.trungBinh.compareTo(a.diem.trungBinh);
+        return d != 0 ? d : b.diem.soLuot.compareTo(a.diem.soLuot);
+      });
+  }
+  return kq;
 }

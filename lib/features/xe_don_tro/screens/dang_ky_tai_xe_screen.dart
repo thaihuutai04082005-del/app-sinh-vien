@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/image_gallery.dart';
 import '../../../shared/widgets/image_upload_field.dart';
 import '../../auth/models/xac_thuc.dart';
@@ -26,6 +28,14 @@ class _DangKyTaiXeScreenState extends State<DangKyTaiXeScreen> {
   late final _plate = TextEditingController(text: widget.hoSo?.licensePlate);
   late final _area = TextEditingController(text: widget.hoSo?.area);
   late final _price = TextEditingController(text: widget.hoSo?.priceReference);
+  late final _giaChuyen = _soCtrl(widget.hoSo?.priceTrip);
+  late final _giaKm = _soCtrl(widget.hoSo?.pricePerKm);
+  late final _giaGio = _soCtrl(widget.hoSo?.priceHourly);
+
+  static TextEditingController _soCtrl(num? v) =>
+      TextEditingController(text: v?.round().toString() ?? '');
+
+  static int? _so(TextEditingController c) => int.tryParse(c.text.trim());
   late final _desc = TextEditingController(text: widget.hoSo?.description);
   late final _xacThuc = widget.dv.xacThuc.cuaToi(widget.dv.uid);
   List<String> _anhXe = const [];
@@ -43,6 +53,9 @@ class _DangKyTaiXeScreenState extends State<DangKyTaiXeScreen> {
     _plate.dispose();
     _area.dispose();
     _price.dispose();
+    _giaChuyen.dispose();
+    _giaKm.dispose();
+    _giaGio.dispose();
     _desc.dispose();
     super.dispose();
   }
@@ -51,10 +64,13 @@ class _DangKyTaiXeScreenState extends State<DangKyTaiXeScreen> {
     final hopLe = _formKey.currentState!.validate();
     // Khi sửa: không chọn ảnh mới thì giữ ảnh cũ.
     final anhXe = _anhXe.isEmpty && _sua ? widget.hoSo!.vehiclePhotos : _anhXe;
+    final coGia = [_giaChuyen, _giaKm, _giaGio].any((c) => _so(c) != null);
     setState(() {
       _thieuAnh = anhXe.isEmpty || (!_sua && _bangLai.isEmpty);
-      _saving = hopLe && !_thieuAnh;
-      _error = null;
+      _saving = hopLe && !_thieuAnh && coGia;
+      _error = coGia
+          ? null
+          : 'Nhập ít nhất một mức giá: theo chuyến, theo km hoặc theo giờ.';
     });
     if (!_saving) return;
     try {
@@ -69,6 +85,9 @@ class _DangKyTaiXeScreenState extends State<DangKyTaiXeScreen> {
           licensePhotos: bangLai,
           area: _area.text.trim(),
           priceReference: _price.text.trim(),
+          priceTrip: _so(_giaChuyen),
+          pricePerKm: _so(_giaKm),
+          priceHourly: _so(_giaGio),
           description: _desc.text.trim(),
         ),
       );
@@ -251,15 +270,37 @@ class _DangKyTaiXeScreenState extends State<DangKyTaiXeScreen> {
             validator: (v) => (v ?? '').trim().isEmpty ? 'Nhập khu vực' : null,
           ),
           const SizedBox(height: 6),
+          Text(
+            'Bảng giá tham khảo (nhập ít nhất một mức)',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          for (final (ctrl, nhan, donVi, min) in [
+            (_giaChuyen, 'Theo chuyến (từ)', 'đ/chuyến', 10000),
+            (_giaKm, 'Theo km', 'đ/km', 1000),
+            (_giaGio, 'Theo giờ (chỉ khuân vác)', 'đ/giờ', 10000),
+          ]) ...[
+            TextFormField(
+              controller: ctrl,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(labelText: nhan, suffixText: donVi),
+              validator: (v) {
+                final n = int.tryParse((v ?? '').trim());
+                return (v ?? '').trim().isNotEmpty && (n == null || n < min)
+                    ? 'Tối thiểu ${formatPrice(min)}'
+                    : null;
+              },
+            ),
+            const SizedBox(height: 10),
+          ],
           TextFormField(
             controller: _price,
             maxLength: 300,
             decoration: const InputDecoration(
-              labelText: 'Bảng giá tham khảo',
-              hintText: 'VD: 150k/chuyến dưới 5km, +10k/km',
+              labelText: 'Ghi chú giá (không bắt buộc)',
+              hintText: 'VD: dưới 5km tính 1 chuyến, tầng cao +20k',
             ),
-            validator: (v) =>
-                (v ?? '').trim().isEmpty ? 'Nhập bảng giá tham khảo' : null,
           ),
           const SizedBox(height: 6),
           TextFormField(

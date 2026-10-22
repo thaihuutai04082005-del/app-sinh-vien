@@ -67,6 +67,9 @@ class _FakeXe implements XeService {
         vehiclePhotos: h.vehiclePhotos,
         area: h.area,
         priceReference: h.priceReference,
+        priceTrip: h.priceTrip,
+        pricePerKm: h.pricePerKm,
+        priceHourly: h.priceHourly,
         driverVerified: true,
       ),
     );
@@ -224,6 +227,29 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Xe máy chở hàng'));
     await tester.pumpAndSettle();
     expect(find.text('Anh Tư'), findsNothing);
+  });
+
+  test('so sánh xe: xếp theo giá chuyến hoặc theo đánh giá', () {
+    TaiXe tx(String id, {num? gia, num tong = 0, int luot = 0}) => TaiXe(
+      driverId: id,
+      name: id,
+      vehicleType: 'xe_ba_gac',
+      area: '',
+      priceReference: '',
+      priceTrip: gia,
+      diem: DiemDanhGia(tong: tong, soLuot: luot),
+    );
+    final ds = [
+      tx('a', gia: 300000, tong: 9, luot: 2),
+      tx('b'),
+      tx('c', gia: 150000, tong: 4, luot: 1),
+      tx('d', gia: 200000, tong: 13.5, luot: 3),
+    ];
+    String ten(List<TaiXe> l) => l.map((t) => t.driverId).join();
+    expect(ten(xepTaiXe(ds, 'gia')), 'cdab');
+    // a 4,5 (2 lượt) và d 4,5 (3 lượt): nhiều lượt hơn đứng trước.
+    expect(ten(xepTaiXe(ds, 'danhGia')), 'dacb');
+    expect(ten(xepTaiXe(ds, null)), 'abcd');
   });
 
   testWidgets('đặt xe: cần ảnh và số điện thoại, gửi xong mở đơn chờ báo giá', (
@@ -429,14 +455,15 @@ void main() {
         find.widgetWithText(TextFormField, 'Khu vực hoạt động'),
         'Bình Thạnh',
       );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Bảng giá tham khảo'),
-        '200k/chuyến',
-      );
       await tester.ensureVisible(find.text('Gửi hồ sơ để duyệt'));
       await tester.tap(find.text('Gửi hồ sơ để duyệt'));
       await tester.pumpAndSettle();
       expect(find.text('Biển số không hợp lệ'), findsOneWidget);
+      expect(find.textContaining('Nhập ít nhất một mức giá'), findsOneWidget);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Theo chuyến (từ)'),
+        '200000',
+      );
       expect(
         find.text('Cần ít nhất 1 ảnh xe và 1 ảnh bằng lái.'),
         findsOneWidget,
@@ -458,6 +485,7 @@ void main() {
 
       final t = kho.taiXe.single;
       expect(t.licensePlate, '59C1-234.56');
+      expect(t.priceTrip, 200000);
       expect(t.vehiclePhotos.single, startsWith('https://cdn.test/xe_anh/'));
       expect(
         kho.bangLai['u']!.single,

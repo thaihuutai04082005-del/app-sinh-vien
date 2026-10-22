@@ -17,6 +17,27 @@ export function bienSo(v) {
   return s;
 }
 
+/** Giá không bắt buộc: null hoặc số nguyên trong khoảng. */
+function giaTuyChon(v, ten, min, max) {
+  return v == null || v === '' ? null : soNguyen(v, ten, { min, max });
+}
+
+/**
+ * Bảng giá tham khảo (mục 3.3): theo chuyến, theo km, theo giờ (chỉ khuân vác) — có ít nhất một
+ * để sinh viên so sánh; `priceReference` là ghi chú thêm.
+ */
+export function bangGia(tham) {
+  const gia = {
+    priceTrip: giaTuyChon(tham.priceTrip, 'Giá theo chuyến', 10_000, GIA_TOI_DA),
+    pricePerKm: giaTuyChon(tham.pricePerKm, 'Giá theo km', 1000, 1_000_000),
+    priceHourly: giaTuyChon(tham.priceHourly, 'Giá theo giờ', 10_000, 5_000_000),
+  };
+  if (Object.values(gia).every((g) => g == null)) {
+    throw thamSoSai('Nhập ít nhất một mức giá: theo chuyến, theo km hoặc theo giờ.');
+  }
+  return { ...gia, priceReference: chuoiTuyChon(tham.priceReference, 'Ghi chú giá', 300) };
+}
+
 export function hoSoTaiXe(tham) {
   return {
     hoSo: {
@@ -24,7 +45,7 @@ export function hoSoTaiXe(tham) {
       licensePlate: bienSo(tham.licensePlate),
       vehiclePhotos: danhSachLink(tham.vehiclePhotos, 'ảnh xe', { min: 1, max: 4 }),
       area: chuoi(tham.area, 'Khu vực hoạt động', { max: 120 }),
-      priceReference: chuoi(tham.priceReference, 'Bảng giá tham khảo', { max: 300 }),
+      ...bangGia(tham),
       description: chuoiTuyChon(tham.description, 'Giới thiệu', 500),
     },
     giayTo: { licensePhotos: danhSachLink(tham.licensePhotos, 'ảnh bằng lái', { min: 1, max: 2 }) },

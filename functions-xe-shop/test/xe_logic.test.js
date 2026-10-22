@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  bienSo, chuyenTrangThai, hoSoTaiXe, ketQuaDuyet, trangThaiDuyetSauKhiLuu, yeuCauMoi,
+  bangGia, bienSo, chuyenTrangThai, hoSoTaiXe, ketQuaDuyet, trangThaiDuyetSauKhiLuu, yeuCauMoi,
 } from '../src/xe_logic.js';
 
 const NOW = Date.UTC(2026, 9, 13, 3);
@@ -10,7 +10,8 @@ const loiCo = (re) => (e) => re.test(e.message);
 
 const HO_SO = {
   vehicleType: 'xe_ba_gac', licensePlate: ' 59c1-234.56 ', vehiclePhotos: ['https://x/xe.jpg'],
-  licensePhotos: ['https://x/bang.jpg'], area: ' Thủ Đức ', priceReference: '150k/chuyến',
+  licensePhotos: ['https://x/bang.jpg'], area: ' Thủ Đức ', priceTrip: 150000,
+  priceReference: 'Dưới 5km',
 };
 
 test('hồ sơ tài xế: loại xe, biển số, ảnh xe, bằng lái; bằng lái tách riêng', () => {
@@ -33,7 +34,7 @@ test('lưu hồ sơ: mới / bị từ chối thì chờ duyệt; đã duyệt c
   const daDuyet = { ...moi.hoSo, approval: 'approved' };
   assert.equal(trangThaiDuyetSauKhiLuu(null, null, moi), 'pending');
   assert.equal(trangThaiDuyetSauKhiLuu({ ...daDuyet, approval: 'rejected' }, moi.giayTo, moi), 'pending');
-  assert.equal(trangThaiDuyetSauKhiLuu(daDuyet, moi.giayTo, hoSoTaiXe({ ...HO_SO, priceReference: '200k' })), 'approved');
+  assert.equal(trangThaiDuyetSauKhiLuu(daDuyet, moi.giayTo, hoSoTaiXe({ ...HO_SO, priceTrip: 200000 })), 'approved');
   assert.equal(trangThaiDuyetSauKhiLuu(daDuyet, moi.giayTo, hoSoTaiXe({ ...HO_SO, licensePlate: '51F12345' })), 'pending');
   assert.equal(
     trangThaiDuyetSauKhiLuu(daDuyet, moi.giayTo, hoSoTaiXe({ ...HO_SO, licensePhotos: ['https://x/moi.jpg'] })),
@@ -108,4 +109,13 @@ test('hủy: cả hai bên, cần lý do, không hủy khi đang chuyển', () =
 
 test('hành động lạ bị từ chối', () => {
   assert.throws(() => chuyenTrangThai(don('pending'), 'xoa', 'sv', {}, NOW), loiCo(/Hành động/));
+});
+
+test('bảng giá: cần ít nhất một mức giá, kiểm tra khoảng giá', () => {
+  assert.deepEqual(bangGia({ pricePerKm: 10000, priceReference: ' Có phụ bốc xếp ' }), {
+    priceTrip: null, pricePerKm: 10000, priceHourly: null, priceReference: 'Có phụ bốc xếp',
+  });
+  assert.throws(() => bangGia({ priceReference: '150k' }), (e) => /ít nhất một mức giá/.test(e.message));
+  assert.throws(() => bangGia({ priceTrip: 5000 }), (e) => /Giá theo chuyến/.test(e.message));
+  assert.throws(() => bangGia({ priceHourly: 1.5 }), (e) => /Giá theo giờ/.test(e.message));
 });

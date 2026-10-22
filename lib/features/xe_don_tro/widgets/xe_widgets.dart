@@ -212,10 +212,18 @@ class TaiXeCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.sell_outlined, size: 16, color: colors.primary),
                 const SizedBox(width: 6),
-                Expanded(child: Text(taiXe.priceReference)),
+                Expanded(
+                  child: Text(
+                    [
+                      ...bangGiaNgan(taiXe),
+                      if (taiXe.priceReference.isNotEmpty) taiXe.priceReference,
+                    ].join(' · '),
+                  ),
+                ),
               ],
             ),
             if (taiXe.description.isNotEmpty) ...[
@@ -239,3 +247,10 @@ class TaiXeCard extends StatelessWidget {
     );
   }
 }
+
+/// "Chuyến từ 150k", "10k/km", "Bốc xếp 80k/giờ".
+List<String> bangGiaNgan(TaiXe t) => [
+  if (t.priceTrip != null) 'Chuyến từ ${formatGiaGon(t.priceTrip!)}',
+  if (t.pricePerKm != null) '${formatGiaGon(t.pricePerKm!)}/km',
+  if (t.priceHourly != null) 'Bốc xếp ${formatGiaGon(t.priceHourly!)}/giờ',
+];

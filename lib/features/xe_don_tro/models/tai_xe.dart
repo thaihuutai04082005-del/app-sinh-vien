@@ -17,6 +17,9 @@ class TaiXe {
     this.approval = 'pending',
     this.rejectReason,
     this.diem = DiemDanhGia.chuaCo,
+    this.priceTrip,
+    this.pricePerKm,
+    this.priceHourly,
   });
 
   final String driverId;
@@ -25,7 +28,14 @@ class TaiXe {
   /// xe_tai_nho | xe_ba_gac | xe_may
   final String vehicleType;
   final String area;
+
+  /// Ghi chú thêm cho bảng giá (hồ sơ cũ chỉ có trường này).
   final String priceReference;
+
+  /// Bảng giá tham khảo: theo chuyến, theo km, theo giờ (chỉ khuân vác); có thể thiếu.
+  final num? priceTrip;
+  final num? pricePerKm;
+  final num? priceHourly;
   final String description;
 
   /// available | busy
@@ -73,6 +83,9 @@ class TaiXe {
     approval: map['approval'] as String? ?? 'pending',
     rejectReason: map['rejectReason'] as String?,
     diem: DiemDanhGia.fromMap(map),
+    priceTrip: map['priceTrip'] as num?,
+    pricePerKm: map['pricePerKm'] as num?,
+    priceHourly: map['priceHourly'] as num?,
   );
 }
 
@@ -84,7 +97,10 @@ class HoSoTaiXeNhap {
     required this.vehiclePhotos,
     required this.licensePhotos,
     required this.area,
-    required this.priceReference,
+    this.priceReference = '',
+    this.priceTrip,
+    this.pricePerKm,
+    this.priceHourly,
     this.description = '',
   });
 
@@ -96,6 +112,9 @@ class HoSoTaiXeNhap {
   final List<String> licensePhotos;
   final String area;
   final String priceReference;
+  final int? priceTrip;
+  final int? pricePerKm;
+  final int? priceHourly;
   final String description;
 
   Map<String, dynamic> toMap() => {
@@ -105,6 +124,9 @@ class HoSoTaiXeNhap {
     'licensePhotos': licensePhotos,
     'area': area,
     'priceReference': priceReference,
+    'priceTrip': priceTrip,
+    'pricePerKm': pricePerKm,
+    'priceHourly': priceHourly,
     'description': description,
   };
 }
