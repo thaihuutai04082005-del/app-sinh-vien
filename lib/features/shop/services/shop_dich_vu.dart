@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/services/image_storage_service.dart';
+import '../../../shared/services/callable_api.dart';
+import '../../../shared/services/chat_service.dart';
 import '../../../shared/services/danh_gia_service.dart';
 import '../../../shared/services/theo_doi_service.dart';
 import '../../../shared/widgets/image_upload_field.dart';
@@ -24,6 +26,7 @@ class ShopDichVu {
     required this.danhGia,
     required this.uuDai,
     required this.theoDoi,
+    required this.chat,
     this.pickImages,
     this.pickVideo,
   });
@@ -45,6 +48,9 @@ class ShopDichVu {
 
   /// Theo dõi shop, sản phẩm yêu thích.
   final TheoDoiService theoDoi;
+
+  /// Chat người mua ↔ shop.
+  final ChatService chat;
   final ImagePickerCallback? pickImages;
   final VideoPickerCallback? pickVideo;
 
@@ -60,6 +66,11 @@ class ShopDichVu {
       danhGia: FirebaseDanhGiaService(),
       uuDai: FirebaseUuDaiService(uid: uid),
       theoDoi: FirebaseTheoDoiService(uid: uid),
+      chat: FirebaseChatService(
+        uid: uid,
+        module: 'shop',
+        api: FirebaseCallableApi('shopApi'),
+      ),
     );
   }
 }

@@ -590,6 +590,35 @@ void main() {
     expect(find.text('Giỏ hàng'), findsOneWidget);
   });
 
+  testWidgets(
+    'chat: người mua nhắn shop từ trang sản phẩm, shop thấy tin mới',
+    (tester) async {
+      final kho = KhoGia()..products.add(sanPhamMau(id: 'a'));
+      await _pump(
+        tester,
+        SanPhamDetailScreen(dv: shopDv(kho, 'mua'), productId: 'a'),
+      );
+      await tester.tap(find.text('Chat với shop'));
+      await tester.pumpAndSettle();
+      expect(find.text('Người ban'), findsOneWidget);
+      await tester.enterText(
+        find.byType(TextField),
+        'Áo còn size M không shop?',
+      );
+      await tester.tap(find.byTooltip('Gửi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Áo còn size M không shop?'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await _pump(tester, KenhNguoiBanScreen(dv: shopDv(kho, 'ban')));
+      await tester.tap(find.byTooltip('Tin nhắn'));
+      await tester.pumpAndSettle();
+      expect(find.text('Người mua'), findsOneWidget);
+      expect(find.text('Áo còn size M không shop?'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+    },
+  );
+
   test(
     'giỏ hàng lưu lại theo tài khoản và kẹp số lượng theo tồn kho',
     () async {

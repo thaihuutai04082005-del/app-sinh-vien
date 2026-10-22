@@ -6,6 +6,7 @@ import { thamSoSai } from './src/loi.js';
 import { nguoiDung } from './src/tai_khoan.js';
 import * as xe from './src/xe.js';
 import * as shop from './src/shop.js';
+import * as chat from './src/chat.js';
 
 initializeApp();
 
@@ -21,6 +22,9 @@ export const xeApi = onCall({ region: REGION }, async (request) => {
     case 'guiYeuCau': return xe.guiYeuCau(nd, tham);
     case 'thaoTacDon': return xe.thaoTacDon(nd, tham);
     case 'danhGiaChuyen': return xe.danhGiaChuyen(nd, tham);
+    case 'moChat': return chat.moChat('xe', nd, tham);
+    case 'guiTin': return chat.guiTin('xe', nd, tham);
+    case 'daDoc': return chat.daDoc('xe', nd, tham);
     default: throw thamSoSai('Hành động không hợp lệ.');
   }
 });
@@ -41,6 +45,9 @@ export const shopApi = onCall({ region: REGION }, async (request) => {
     case 'phanHoiTraGia': return shop.phanHoiTraGiaApi(nd, tham);
     case 'taoVoucher': return shop.taoVoucher(nd, tham);
     case 'ngungVoucher': return shop.ngungVoucher(nd, tham);
+    case 'moChat': return chat.moChat('shop', nd, tham);
+    case 'guiTin': return chat.guiTin('shop', nd, tham);
+    case 'daDoc': return chat.daDoc('shop', nd, tham);
     default: throw thamSoSai('Hành động không hợp lệ.');
   }
 });

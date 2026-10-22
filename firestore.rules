@@ -118,6 +118,18 @@ service cloud.firestore {
       }
     }
 
+    // Chat Shop / Xe dọn trọ (mục 7.3): chỉ 2 người trong cuộc đọc. Mở chat, gửi tin qua hệ thống.
+    match /chats/{chatId} {
+      allow read: if signedIn() && (resource == null || request.auth.uid in resource.data.participantIds);
+      allow write: if false;
+
+      match /messages/{msgId} {
+        allow read: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+        allow write: if false;
+      }
+    }
+
     // Theo dõi / yêu thích (mục 7.3, dùng chung): mỗi người tự ghi / xóa của mình, id cố định
     // {uid}_{targetType}_{targetId} để không trùng. Theo dõi shop công khai để đếm người theo dõi.
     match /follows/{id} {

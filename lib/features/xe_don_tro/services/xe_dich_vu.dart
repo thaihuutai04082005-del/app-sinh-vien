@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/services/image_storage_service.dart';
+import '../../../shared/services/callable_api.dart';
+import '../../../shared/services/chat_service.dart';
 import '../../../shared/services/danh_gia_service.dart';
 import '../../../shared/widgets/image_upload_field.dart';
 import '../../../shared/widgets/video_upload_field.dart';
@@ -16,6 +18,7 @@ class XeDichVu {
     required this.storage,
     required this.xacThuc,
     required this.danhGia,
+    required this.chat,
     this.pickImages,
     this.pickVideo,
   });
@@ -29,6 +32,9 @@ class XeDichVu {
 
   /// Đọc đánh giá tài xế (viết đánh giá qua [xe]).
   final DanhGiaService danhGia;
+
+  /// Chat sinh viên ↔ tài xế.
+  final ChatService chat;
   final ImagePickerCallback? pickImages;
   final VideoPickerCallback? pickVideo;
 
@@ -40,6 +46,11 @@ class XeDichVu {
       storage: FirebaseImageStorageService(),
       xacThuc: FirebaseXacThucService(),
       danhGia: FirebaseDanhGiaService(),
+      chat: FirebaseChatService(
+        uid: uid,
+        module: 'xe',
+        api: FirebaseCallableApi('xeApi'),
+      ),
     );
   }
 }

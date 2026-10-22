@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../fakes/chat_gia.dart';
 import '../../fakes/danh_gia_gia.dart';
 import '../../fakes/xac_thuc_gia.dart';
 import '../shop/fakes.dart' show png;
@@ -33,6 +34,7 @@ class _Kho {
   final don = <String, Map<String, dynamic>>{};
   final bangLai = <String, List<String>>{};
   final danhGia = DanhGiaGia();
+  final chat = KhoChat();
 }
 
 class _FakeXe implements XeService {
@@ -183,6 +185,7 @@ XeDichVu _dv(_Kho kho, String uid, {XacThucGia? xacThuc}) => XeDichVu(
   storage: _Storage(),
   xacThuc: xacThuc ?? XacThucGia.day(),
   danhGia: kho.danhGia,
+  chat: ChatGia(kho.chat, uid),
   pickImages: (_) async => [XFile.fromData(png, name: 'do.png')],
 );
 
@@ -392,6 +395,29 @@ void main() {
     expect(find.text('Bạn đã đánh giá chuyến này.'), findsOneWidget);
     expect(kho.don['b1']!['reviewed'], true);
     expect(await kho.danhGia.theoDoiTuong('xe_don_tro', 'tx'), hasLength(1));
+  });
+
+  testWidgets('đơn đặt xe: sinh viên nhắn tài xế', (tester) async {
+    final kho = _Kho()..taiXe.add(_taiXeMau);
+    kho.don['b1'] = {
+      'userId': 'sv',
+      'driverId': 'tx',
+      'fromAddress': 'A',
+      'toAddress': 'B',
+      'status': 'pending',
+      'itemPhotos': ['https://cdn.test/1.jpg'],
+    };
+    await _pump(
+      tester,
+      BookingXeDetailScreen(dv: _dv(kho, 'sv'), bookingId: 'b1'),
+    );
+    await tester.tap(find.text('Nhắn tài xế'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Anh tới lúc mấy giờ?');
+    await tester.tap(find.byTooltip('Gửi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Anh tới lúc mấy giờ?'), findsOneWidget);
+    expect(kho.chat.cuoc.values.single.participantIds, ['sv', 'tx']);
   });
 
   testWidgets('hủy yêu cầu phải nhập lý do', (tester) async {

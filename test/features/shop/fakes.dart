@@ -14,6 +14,7 @@ import 'package:app_sinh_vien/features/shop/services/uu_dai_service.dart';
 import 'package:app_sinh_vien/shared/models/danh_gia.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../fakes/chat_gia.dart';
 import '../../fakes/danh_gia_gia.dart';
 import '../../fakes/theo_doi_gia.dart';
 import '../../fakes/xac_thuc_gia.dart';
@@ -42,6 +43,7 @@ class KhoGia {
   final danhGia = DanhGiaGia();
   final thongKe = <String, ThongKeShop>{};
   final theoDoi = <(String, String, String)>{};
+  final chat = KhoChat();
   final traGia = <TraGia>[];
   final vouchers = <String, Voucher>{};
   var _id = 0;
@@ -425,6 +427,7 @@ ShopDichVu shopDv(
   danhGia: kho.danhGia,
   uuDai: FakeUuDaiService(kho, uid),
   theoDoi: TheoDoiGia(kho.theoDoi, uid),
+  chat: ChatGia(kho.chat, uid),
   pickImages: pickOne,
 );
 

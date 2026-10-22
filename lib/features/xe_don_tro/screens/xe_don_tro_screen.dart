@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/widgets/chat_widgets.dart';
 import '../../../shared/widgets/async_list_view.dart';
 import '../../auth/models/xac_thuc.dart';
 import '../models/booking_xe.dart';
@@ -63,6 +64,19 @@ class _XeDonTroScreenState extends State<XeDonTroScreen>
       appBar: AppBar(
         title: const Text('Xe dọn trọ'),
         actions: [
+          IconButton(
+            tooltip: 'Tin nhắn',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ChatListScreen(
+                  chat: widget.dv.chat,
+                  uid: widget.dv.uid,
+                  goiY: 'Nhắn tài xế từ trang đơn đặt xe.',
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.chat_bubble_outline),
+          ),
           StreamBuilder<QuyenAdmin>(
             stream: _quyen,
             builder: (context, snap) => snap.data?.xe == true

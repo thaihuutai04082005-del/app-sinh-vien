@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/async_list_view.dart';
+import '../../../shared/widgets/chat_widgets.dart';
 import '../../../shared/widgets/image_gallery.dart';
 import '../models/product.dart';
 import '../services/shop_dich_vu.dart';
@@ -47,6 +48,12 @@ class _KenhNguoiBanScreenState extends State<KenhNguoiBanScreen> {
       appBar: AppBar(
         title: const Text('Kênh người bán'),
         actions: [
+          IconButton(
+            tooltip: 'Tin nhắn',
+            onPressed: () =>
+                _mo(ChatListScreen(chat: widget.dv.chat, uid: widget.dv.uid)),
+            icon: const Icon(Icons.chat_bubble_outline),
+          ),
           IconButton(
             tooltip: 'Khách trả giá',
             onPressed: () => _mo(TraGiaScreen(dv: widget.dv, laNguoiBan: true)),

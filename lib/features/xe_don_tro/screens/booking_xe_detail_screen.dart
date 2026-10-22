@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/utils/formatters.dart';
 import '../../../shared/models/danh_gia.dart';
+import '../../../shared/widgets/chat_widgets.dart';
 import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/detail_layout.dart';
 import '../../../shared/widgets/image_gallery.dart';
@@ -145,7 +146,22 @@ class _BookingXeDetailScreenState extends State<BookingXeDetailScreen> {
       info: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          BookingStatusChip(status: b.status),
+          Row(
+            children: [
+              BookingStatusChip(status: b.status),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => moChatVoi(
+                  context,
+                  widget.dv.chat,
+                  widget.dv.uid,
+                  laTaiXe ? b.userId : b.driverId,
+                ),
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: Text(laTaiXe ? 'Nhắn khách' : 'Nhắn tài xế'),
+              ),
+            ],
+          ),
           const SizedBox(height: 14),
           _InfoRow(
             icon: Icons.trip_origin,

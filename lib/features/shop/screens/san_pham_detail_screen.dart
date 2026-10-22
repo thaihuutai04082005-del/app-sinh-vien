@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/utils/formatters.dart';
 import '../../../shared/models/danh_gia.dart';
+import '../../../shared/widgets/chat_widgets.dart';
 import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/detail_layout.dart';
 import '../../../shared/widgets/image_gallery.dart';
@@ -386,10 +387,25 @@ class _SanPhamDetailScreenState extends State<SanPhamDetailScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () => _traGia(product),
-              icon: const Icon(Icons.handshake_outlined),
-              label: const Text('Trả giá với shop'),
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _traGia(product),
+                  icon: const Icon(Icons.handshake_outlined),
+                  label: const Text('Trả giá với shop'),
+                ),
+                TextButton.icon(
+                  onPressed: () => moChatVoi(
+                    context,
+                    widget.dv.chat,
+                    widget.dv.uid,
+                    product.shopId,
+                  ),
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Chat với shop'),
+                ),
+              ],
             ),
           ] else
             const Text('Sản phẩm đã hết hàng.'),

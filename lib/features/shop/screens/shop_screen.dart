@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../auth/models/xac_thuc.dart';
 import '../../../shared/widgets/async_list_view.dart';
+import '../../../shared/widgets/chat_widgets.dart';
 import '../models/product.dart';
 import '../services/shop_dich_vu.dart';
 import '../widgets/shop_widgets.dart';
@@ -104,6 +105,17 @@ class _ShopScreenState extends State<ShopScreen> {
                     icon: const Icon(Icons.gavel_outlined),
                   )
                 : const SizedBox.shrink(),
+          ),
+          IconButton(
+            tooltip: 'Tin nhắn',
+            onPressed: () => _mo(
+              ChatListScreen(
+                chat: widget.dv.chat,
+                uid: widget.dv.uid,
+                goiY: 'Bấm "Chat với shop" ở trang sản phẩm để hỏi người bán.',
+              ),
+            ),
+            icon: const Icon(Icons.chat_bubble_outline),
           ),
           IconButton(
             tooltip: 'Trả giá của tôi',

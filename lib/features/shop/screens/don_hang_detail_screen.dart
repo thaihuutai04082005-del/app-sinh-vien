@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/utils/formatters.dart';
 import '../../../shared/models/danh_gia.dart';
+import '../../../shared/widgets/chat_widgets.dart';
 import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/image_gallery.dart';
 import '../../../shared/widgets/status_timeline.dart';
@@ -213,6 +214,17 @@ class _DonHangDetailScreenState extends State<DonHangDetailScreen> {
                         ),
                       ),
                     ),
+                    if (!widget.laAdmin)
+                      IconButton(
+                        tooltip: laShop ? 'Nhắn khách' : 'Nhắn shop',
+                        onPressed: () => moChatVoi(
+                          context,
+                          widget.dv.chat,
+                          widget.dv.uid,
+                          laShop ? d.buyerId : d.shopId,
+                        ),
+                        icon: const Icon(Icons.chat_bubble_outline),
+                      ),
                     DonStatusChip(status: d.status),
                   ],
                 ),
