@@ -1,8 +1,10 @@
 import 'package:app_sinh_vien/features/auth/models/xac_thuc.dart';
 import 'package:app_sinh_vien/features/shop/models/don_hang.dart';
 import 'package:app_sinh_vien/features/shop/models/gio_hang.dart';
+import 'package:app_sinh_vien/features/shop/models/product.dart';
 import 'package:app_sinh_vien/features/shop/screens/dat_hang_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/don_hang_detail_screen.dart';
+import 'package:app_sinh_vien/features/shop/screens/gian_hang_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/san_pham_detail_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/kenh_nguoi_ban_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/shop_screen.dart';
@@ -444,10 +446,7 @@ void main() {
     await _pump(tester, KenhNguoiBanScreen(dv: shopDv(kho, 'ban')));
     await tester.tap(find.byTooltip('Khách trả giá'));
     await tester.pumpAndSettle();
-    expect(
-      find.textContaining('70.000đ', findRichText: true),
-      findsOneWidget,
-    );
+    expect(find.textContaining('70.000đ', findRichText: true), findsOneWidget);
     await tester.tap(find.text('Đồng ý'));
     await tester.pumpAndSettle();
     expect(kho.traGia.single.status, 'accepted');
@@ -521,6 +520,74 @@ void main() {
       [d.voucherCode, d.discountAmount, d.totalPrice],
       ['GIAM10', 15000, 185000],
     );
+  });
+
+  testWidgets('yêu thích sản phẩm rồi lọc "Yêu thích" ở sảnh', (tester) async {
+    final kho = KhoGia()
+      ..products.addAll([
+        sanPhamMau(id: 'a', name: 'Áo thun'),
+        sanPhamMau(id: 'b', name: 'Quần jean', category: 'quan'),
+      ]);
+    final mua = shopDv(kho, 'mua');
+    await _pump(tester, SanPhamDetailScreen(dv: mua, productId: 'b'));
+    await tester.tap(find.byTooltip('Yêu thích'));
+    await tester.pump();
+    expect(find.byTooltip('Bỏ yêu thích'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await _pumpShop(tester, mua);
+    expect(find.text('Áo thun'), findsOneWidget);
+    await tester.ensureVisible(find.text('Yêu thích'));
+    await tester.tap(find.text('Yêu thích'));
+    await tester.pumpAndSettle();
+    expect(find.text('Áo thun'), findsNothing);
+    expect(find.text('Quần jean'), findsOneWidget);
+  });
+
+  testWidgets('gian hàng: theo dõi shop, hiện điểm hiệu suất', (tester) async {
+    final kho = KhoGia()..products.add(sanPhamMau(id: 'a'));
+    kho.thongKe['ban'] = ThongKeShop.fromMap({
+      'orderCount': 20,
+      'cancelCount': 1,
+      'confirmCount': 10,
+      'confirmMsSum': 10 * 3 * 3600000,
+    });
+    await _pump(
+      tester,
+      GianHangScreen(
+        dv: shopDv(kho, 'mua'),
+        shopId: 'ban',
+        shopName: 'Shop ban',
+      ),
+    );
+    expect(
+      find.text('0 người theo dõi · Shop hủy 5% đơn · Xác nhận trong ~3 giờ'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Theo dõi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Đang theo dõi'), findsOneWidget);
+    expect(find.textContaining('1 người theo dõi'), findsOneWidget);
+  });
+
+  testWidgets('đơn hoàn tất: Mua lại thêm món còn bán vào giỏ', (tester) async {
+    final kho = KhoGia()..products.add(sanPhamMau(id: 'a', sizes: const []));
+    final mua = shopDv(kho, 'mua');
+    await mua.donHang.datHang(
+      [DongGio.tu(kho.products.single, size: '', quantity: 2)],
+      const ThongTinNhan(
+        receiverName: 'An',
+        phone: '0912345678',
+        deliveryMethod: 'hen_lay',
+      ),
+    );
+    final id = kho.orders.single.id;
+    await mua.donHang.thaoTac(id, 'daNhan');
+    await _pump(tester, DonHangDetailScreen(dv: mua, orderId: id));
+    await tester.tap(find.text('Mua lại'));
+    await tester.pumpAndSettle();
+    expect(mua.gioHang.dong.single.quantity, 2);
+    expect(find.text('Giỏ hàng'), findsOneWidget);
   });
 
   test(

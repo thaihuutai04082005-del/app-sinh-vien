@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  chuyenTrangThaiDon, gioHang, huyQuaHan, nhanHang, phanHoiTraGia, phanXuKhieuNai, sanPham, tachDon, tinhGiam,
+  chuyenTrangThaiDon, demHieuSuat, gioHang, huyQuaHan, nhanHang, phanHoiTraGia, phanXuKhieuNai, sanPham, tachDon, tinhGiam,
   traGiaMoi, tuXuLyTraHang, voucherMoi,
 } from '../src/shop_logic.js';
 
@@ -258,4 +258,15 @@ test('voucher: tạo đúng dữ liệu, tính giảm theo % có trần, theo s�
   assert.throws(() => tinhGiam(null, 150000, NOW), loiCo(/không tồn tại/));
   const fixed = { ...v, discountType: 'fixed', discountValue: 30000, maxDiscount: null, minOrderValue: 0 };
   assert.equal(tinhGiam(fixed, 20000, NOW), 20000);
+});
+
+test('hiệu suất shop: đếm đơn shop / hệ thống hủy và thời gian xác nhận', () => {
+  const d = { ...don('pending_confirmation'), lichSu: [{ status: 'pending_confirmation', by: 'buyer', at: NOW }] };
+  assert.deepEqual(demHieuSuat(d, chuyenTrangThaiDon(d, 'xacNhan', 's', {}, NOW + 3_600_000)), {
+    confirmCount: 1, confirmMsSum: 3_600_000,
+  });
+  assert.deepEqual(demHieuSuat(d, chuyenTrangThaiDon(d, 'huy', 's', { reason: 'Hết' }, NOW)), { cancelCount: 1 });
+  assert.deepEqual(demHieuSuat(d, { ...huyQuaHan(NOW), hoanKho: true }), { cancelCount: 1 });
+  // Khách tự hủy không trừ điểm shop.
+  assert.deepEqual(demHieuSuat(d, chuyenTrangThaiDon(d, 'huy', 'm', { reason: 'Nhầm' }, NOW)), {});
 });

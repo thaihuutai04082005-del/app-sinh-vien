@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/services/image_storage_service.dart';
 import '../../../shared/services/danh_gia_service.dart';
+import '../../../shared/services/theo_doi_service.dart';
 import '../../../shared/widgets/image_upload_field.dart';
 import '../../../shared/widgets/video_upload_field.dart';
 import '../../auth/services/xac_thuc_service.dart';
@@ -22,6 +23,7 @@ class ShopDichVu {
     required this.xacThuc,
     required this.danhGia,
     required this.uuDai,
+    required this.theoDoi,
     this.pickImages,
     this.pickVideo,
   });
@@ -40,6 +42,9 @@ class ShopDichVu {
 
   /// Trả giá, voucher.
   final UuDaiService uuDai;
+
+  /// Theo dõi shop, sản phẩm yêu thích.
+  final TheoDoiService theoDoi;
   final ImagePickerCallback? pickImages;
   final VideoPickerCallback? pickVideo;
 
@@ -54,6 +59,7 @@ class ShopDichVu {
       xacThuc: FirebaseXacThucService(),
       danhGia: FirebaseDanhGiaService(),
       uuDai: FirebaseUuDaiService(uid: uid),
+      theoDoi: FirebaseTheoDoiService(uid: uid),
     );
   }
 }

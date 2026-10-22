@@ -42,9 +42,40 @@ class _GianHangScreenState extends State<GianHangScreen> {
       )
       .catchError((_) => <Voucher>[]);
 
-  late final Future<DiemDanhGia> _diem = widget.dv.products.diemShop(
+  late final Future<ThongKeShop> _thongKe = widget.dv.products.thongKeShop(
     widget.shopId,
   );
+  late Future<int> _soTheoDoi = widget.dv.theoDoi.soNguoiTheoDoi(widget.shopId);
+  bool? _dangTheoDoi;
+  bool _dangDoi = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.dv.theoDoi
+        .dangTheoDoi('shop', widget.shopId)
+        .then((v) => mounted ? setState(() => _dangTheoDoi = v) : null)
+        .catchError((_) => null);
+  }
+
+  Future<void> _doiTheoDoi() async {
+    final dang = _dangTheoDoi ?? false;
+    setState(() => _dangDoi = true);
+    try {
+      dang
+          ? await widget.dv.theoDoi.boTheoDoi('shop', widget.shopId)
+          : await widget.dv.theoDoi.theoDoi('shop', widget.shopId);
+      setState(() {
+        _dangTheoDoi = !dang;
+        _soTheoDoi = widget.dv.theoDoi.soNguoiTheoDoi(widget.shopId);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _dangDoi = false);
+    }
+  }
 
   void _xemDanhGia(DiemDanhGia diem) => Navigator.of(context).push(
     MaterialPageRoute<void>(
@@ -76,20 +107,47 @@ class _GianHangScreenState extends State<GianHangScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.shopName)),
+      appBar: AppBar(
+        title: Text(widget.shopName),
+        actions: [
+          if (widget.shopId != widget.dv.uid && _dangTheoDoi != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _dangTheoDoi!
+                  ? OutlinedButton(
+                      onPressed: _dangDoi ? null : _doiTheoDoi,
+                      child: const Text('Đang theo dõi'),
+                    )
+                  : FilledButton.icon(
+                      onPressed: _dangDoi ? null : _doiTheoDoi,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Theo dõi'),
+                    ),
+            ),
+        ],
+      ),
       body: Column(
         children: [
-          FutureBuilder<DiemDanhGia>(
-            future: _diem,
+          FutureBuilder<ThongKeShop>(
+            future: _thongKe,
             builder: (context, snap) {
-              final diem = snap.data ?? DiemDanhGia.chuaCo;
+              final tk = snap.data ?? ThongKeShop.trong;
               return ListTile(
                 leading: const Icon(Icons.storefront),
-                title: SaoTrungBinh(diem: diem),
-                trailing: diem.soLuot == 0
+                title: SaoTrungBinh(diem: tk.diem),
+                subtitle: FutureBuilder<int>(
+                  future: _soTheoDoi,
+                  builder: (context, so) => Text(
+                    [
+                      '${so.data ?? 0} người theo dõi',
+                      ..._hieuSuat(tk),
+                    ].join(' · '),
+                  ),
+                ),
+                trailing: tk.diem.soLuot == 0
                     ? null
                     : TextButton(
-                        onPressed: () => _xemDanhGia(diem),
+                        onPressed: () => _xemDanhGia(tk.diem),
                         child: const Text('Xem đánh giá'),
                       ),
               );
@@ -127,6 +185,15 @@ class _GianHangScreenState extends State<GianHangScreen> {
       ),
     );
   }
+
+  /// "Shop hủy 5% đơn", "Xác nhận trong ~3 giờ" (mục 3.4: điểm hiệu suất công khai).
+  static List<String> _hieuSuat(ThongKeShop tk) => [
+    if (tk.tyLeHuy case final t?) 'Shop hủy ${(t * 100).round()}% đơn',
+    if (tk.xacNhanTrungBinh case final d?)
+      d.inHours >= 1
+          ? 'Xác nhận trong ~${d.inHours} giờ'
+          : 'Xác nhận trong ~${d.inMinutes.clamp(1, 59)} phút',
+  ];
 
   Widget _danhSach() {
     return AsyncListView<Product>(

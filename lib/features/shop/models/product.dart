@@ -103,3 +103,40 @@ const productSizes = ['S', 'M', 'L', 'XL', 'XXL', 'Freesize'];
 
 List<String> _strings(Object? value) =>
     value is List ? value.whereType<String>().toList() : const [];
+
+/// Thống kê công khai của shop — `shop_stats/{shopId}` (server cộng dồn).
+class ThongKeShop {
+  const ThongKeShop({
+    this.diem = DiemDanhGia.chuaCo,
+    this.orderCount = 0,
+    this.cancelCount = 0,
+    this.confirmCount = 0,
+    this.confirmMsSum = 0,
+  });
+
+  final DiemDanhGia diem;
+  final int orderCount;
+
+  /// Đơn shop tự hủy hoặc hệ thống hủy vì shop không xác nhận.
+  final int cancelCount;
+  final int confirmCount;
+  final num confirmMsSum;
+
+  static const trong = ThongKeShop();
+
+  factory ThongKeShop.fromMap(Map<String, dynamic>? m) => ThongKeShop(
+    diem: DiemDanhGia.fromMap(m),
+    orderCount: (m?['orderCount'] as num?)?.toInt() ?? 0,
+    cancelCount: (m?['cancelCount'] as num?)?.toInt() ?? 0,
+    confirmCount: (m?['confirmCount'] as num?)?.toInt() ?? 0,
+    confirmMsSum: m?['confirmMsSum'] as num? ?? 0,
+  );
+
+  /// Tỷ lệ đơn bị shop / hệ thống hủy (0–1); null khi chưa có đơn.
+  double? get tyLeHuy => orderCount == 0 ? null : cancelCount / orderCount;
+
+  /// Thời gian trung bình từ lúc đặt đến lúc shop xác nhận; null khi chưa xác nhận đơn nào.
+  Duration? get xacNhanTrungBinh => confirmCount == 0
+      ? null
+      : Duration(milliseconds: (confirmMsSum / confirmCount).round());
+}

@@ -15,6 +15,7 @@ import 'package:app_sinh_vien/shared/models/danh_gia.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../fakes/danh_gia_gia.dart';
+import '../../fakes/theo_doi_gia.dart';
 import '../../fakes/xac_thuc_gia.dart';
 
 final png = base64Decode(
@@ -39,7 +40,8 @@ class KhoGia {
   final products = <Product>[];
   final orders = <DonHang>[];
   final danhGia = DanhGiaGia();
-  final diemShop = <String, DiemDanhGia>{};
+  final thongKe = <String, ThongKeShop>{};
+  final theoDoi = <(String, String, String)>{};
   final traGia = <TraGia>[];
   final vouchers = <String, Voucher>{};
   var _id = 0;
@@ -67,8 +69,8 @@ class FakeProductService implements ProductService {
       kho.products.firstWhere((p) => p.id == id);
 
   @override
-  Future<DiemDanhGia> diemShop(String shopId) async =>
-      kho.diemShop[shopId] ?? DiemDanhGia.chuaCo;
+  Future<ThongKeShop> thongKeShop(String shopId) async =>
+      kho.thongKe[shopId] ?? ThongKeShop.trong;
 
   Product _tao(String id, SanPhamNhap sp) => Product.fromMap({
     ...sp.toMap(),
@@ -422,6 +424,7 @@ ShopDichVu shopDv(
   xacThuc: xacThuc ?? XacThucGia.day(),
   danhGia: kho.danhGia,
   uuDai: FakeUuDaiService(kho, uid),
+  theoDoi: TheoDoiGia(kho.theoDoi, uid),
   pickImages: pickOne,
 );
 

@@ -41,6 +41,30 @@ class _SanPhamDetailScreenState extends State<SanPhamDetailScreen> {
   String? _size;
   int _soLuong = 1;
   bool _dangXoa = false;
+  bool? _yeuThich;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.dv.theoDoi
+        .dangTheoDoi('product', widget.productId)
+        .then((v) => mounted ? setState(() => _yeuThich = v) : null)
+        .catchError((_) => null);
+  }
+
+  Future<void> _doiYeuThich() async {
+    final cu = _yeuThich ?? false;
+    setState(() => _yeuThich = !cu);
+    try {
+      cu
+          ? await widget.dv.theoDoi.boTheoDoi('product', widget.productId)
+          : await widget.dv.theoDoi.theoDoi('product', widget.productId);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _yeuThich = cu);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
 
   void _reload() => setState(() {
     _product = widget.dv.products.getSanPham(widget.productId);
@@ -170,6 +194,15 @@ class _SanPhamDetailScreenState extends State<SanPhamDetailScreen> {
           appBar: AppBar(
             title: Text(p?.name ?? 'Sản phẩm'),
             actions: [
+              if (p != null && p.shopId != widget.dv.uid && _yeuThich != null)
+                IconButton(
+                  tooltip: _yeuThich! ? 'Bỏ yêu thích' : 'Yêu thích',
+                  onPressed: _doiYeuThich,
+                  icon: Icon(
+                    _yeuThich! ? Icons.favorite : Icons.favorite_border,
+                    color: _yeuThich! ? Colors.redAccent : null,
+                  ),
+                ),
               NutGioHang(
                 gioHang: widget.dv.gioHang,
                 onPressed: () => Navigator.of(context).push(

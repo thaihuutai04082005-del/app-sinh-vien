@@ -118,7 +118,25 @@ service cloud.firestore {
       }
     }
 
-    // Điểm đánh giá cộng dồn của shop: công khai.
+    // Theo dõi / yêu thích (mục 7.3, dùng chung): mỗi người tự ghi / xóa của mình, id cố định
+    // {uid}_{targetType}_{targetId} để không trùng. Theo dõi shop công khai để đếm người theo dõi.
+    match /follows/{id} {
+      allow read: if resource == null
+        || (signedIn() && resource.data.followerId == request.auth.uid)
+        || resource.data.targetType == 'shop';
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['followerId', 'targetId', 'targetType', 'createdAt'])
+        && request.resource.data.followerId == request.auth.uid
+        && request.resource.data.targetType in ['shop', 'product']
+        && request.resource.data.targetId is string
+        && request.resource.data.targetId.size() > 0 && request.resource.data.targetId.size() <= 128
+        && id == request.auth.uid + '_' + request.resource.data.targetType + '_' + request.resource.data.targetId
+        && request.resource.data.createdAt == request.time;
+      allow delete: if signedIn() && resource.data.followerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Điểm đánh giá và hiệu suất (đơn, đơn shop hủy, thời gian xác nhận) cộng dồn của shop: công khai.
     match /shop_stats/{shopId} {
       allow read: if true;
       allow write: if false;

@@ -6,8 +6,10 @@ import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/image_gallery.dart';
 import '../../../shared/widgets/status_timeline.dart';
 import '../models/don_hang.dart';
+import '../models/gio_hang.dart';
 import '../services/shop_dich_vu.dart';
 import '../widgets/shop_widgets.dart';
+import 'gio_hang_screen.dart';
 import 'yeu_cau_tra_hang_screen.dart';
 
 /// Chi tiết đơn hàng + các nút theo vai (mục 3.4):
@@ -80,6 +82,35 @@ class _DonHangDetailScreenState extends State<DonHangDetailScreen> {
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Cảm ơn bạn đã đánh giá!')));
     _reload();
+  }
+
+  /// Thêm lại các món còn bán vào giỏ (theo giá hiện tại) rồi mở giỏ.
+  Future<void> _muaLai(DonHang d) async {
+    var them = 0;
+    for (final m in d.items) {
+      try {
+        final p = await widget.dv.products.getSanPham(m.productId);
+        if (!p.conHang || (p.sizes.isNotEmpty && !p.sizes.contains(m.size))) {
+          continue;
+        }
+        widget.dv.gioHang.them(
+          DongGio.tu(p, size: m.size, quantity: m.quantity.clamp(1, p.stock)),
+        );
+        them++;
+      } catch (_) {
+        // Sản phẩm đã bị xóa: bỏ qua.
+      }
+    }
+    if (!mounted) return;
+    if (them == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Các sản phẩm trong đơn đã hết hàng.')),
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => GioHangScreen(dv: widget.dv)),
+    );
   }
 
   Future<void> _yeuCauTraHang() async {
@@ -444,6 +475,8 @@ class _DonHangDetailScreenState extends State<DonHangDetailScreen> {
           ),
         ),
       ],
+      if (!laShop && d.status == 'buyer_confirmed')
+        phu('Mua lại', () => _muaLai(d)),
       if (!laShop && d.status == 'buyer_confirmed')
         Padding(
           padding: const EdgeInsets.only(top: 8),

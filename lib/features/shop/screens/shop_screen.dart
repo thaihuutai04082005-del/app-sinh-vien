@@ -31,6 +31,10 @@ class _ShopScreenState extends State<ShopScreen> {
   late Future<List<Product>> _hienThi = _loc();
   String? _danhMuc;
   int? _giaToiDa;
+
+  /// Chỉ hiện sản phẩm yêu thích (product) / của shop đang theo dõi (shop).
+  String? _cuaToi;
+  Set<String> _idCuaToi = const {};
   late final Stream<QuyenAdmin> _quyen = widget.dv.xacThuc.quyenAdmin(
     widget.dv.uid,
   );
@@ -39,10 +43,26 @@ class _ShopScreenState extends State<ShopScreen> {
     (ds) => [
       for (final p in ds)
         if ((_danhMuc == null || p.category == _danhMuc) &&
-            (_giaToiDa == null || p.price < _giaToiDa!))
+            (_giaToiDa == null || p.price < _giaToiDa!) &&
+            switch (_cuaToi) {
+              'product' => _idCuaToi.contains(p.id),
+              'shop' => _idCuaToi.contains(p.shopId),
+              _ => true,
+            })
           p,
     ],
   );
+
+  Future<void> _locCuaToi(String? loai) async {
+    final ids = loai == null
+        ? const <String>[]
+        : await widget.dv.theoDoi.cuaToi(loai).catchError((_) => <String>[]);
+    setState(() {
+      _cuaToi = loai;
+      _idCuaToi = ids.toSet();
+      _hienThi = _loc();
+    });
+  }
 
   Future<void> _reload() async {
     final future = widget.dv.products.getDanhSachSanPham();
@@ -148,6 +168,18 @@ class _ShopScreenState extends State<ShopScreen> {
                       }),
                     ),
                   ),
+                for (final (loai, nhan) in [
+                  ('product', 'Yêu thích'),
+                  ('shop', 'Shop theo dõi'),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(nhan),
+                      selected: _cuaToi == loai,
+                      onSelected: (chon) => _locCuaToi(chon ? loai : null),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -158,7 +190,8 @@ class _ShopScreenState extends State<ShopScreen> {
               gridMaxExtent: 220,
               gridFooterHeight: 70,
               emptyIcon: Icons.shopping_bag_outlined,
-              emptyText: _danhMuc == null && _giaToiDa == null
+              emptyText:
+                  _danhMuc == null && _giaToiDa == null && _cuaToi == null
                   ? 'Chưa có sản phẩm nào. Bấm "Đăng sản phẩm" để bắt đầu.'
                   : 'Không có sản phẩm phù hợp bộ lọc.',
               itemBuilder: (context, product) => ProductCard(

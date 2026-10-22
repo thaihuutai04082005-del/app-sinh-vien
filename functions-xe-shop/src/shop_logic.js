@@ -300,6 +300,22 @@ export function phanXuKhieuNai(don, tham, now) {
   };
 }
 
+/**
+ * Bộ đếm hiệu suất shop (mục 3.4, công khai ở shop_stats) cần cộng khi đơn chuyển trạng thái:
+ * đơn shop / hệ thống hủy, số đơn xác nhận và tổng thời gian từ lúc đặt đến lúc xác nhận.
+ * Trả về Map tên trường → số cần cộng.
+ */
+export function demHieuSuat(don, kq) {
+  const dem = {};
+  if (kq.ghi.status === 'cancelled' && ['shop', 'system'].includes(kq.ghi.cancelledBy)) dem.cancelCount = 1;
+  if (kq.ghi.status === 'to_ship') {
+    const datLuc = ms(don.lichSu?.[0]?.at) ?? ms(don.createdAt);
+    dem.confirmCount = 1;
+    dem.confirmMsSum = datLuc == null ? 0 : Math.max(0, kq.lichSuMoi.at - datLuc);
+  }
+  return dem;
+}
+
 /** Đơn quá hạn shop xác nhận thì hệ thống tự hủy. */
 export function huyQuaHan(now, don = {}) {
   return {

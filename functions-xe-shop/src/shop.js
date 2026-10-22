@@ -7,7 +7,7 @@ import { chuoi, motTrong } from './kiem_tra.js';
 import { TIEU_CHI_SHOP, noiDungDanhGia } from './danh_gia.js';
 import { tangLuotDang } from './tai_khoan.js';
 import {
-  CACH_THANH_TOAN, HAN_XAC_NHAN_MS, chuyenTrangThaiDon, gioHang, huyQuaHan, maVoucher, nhanHang, phanHoiTraGia,
+  CACH_THANH_TOAN, HAN_XAC_NHAN_MS, chuyenTrangThaiDon, demHieuSuat, gioHang, huyQuaHan, maVoucher, nhanHang, phanHoiTraGia,
   phanXuKhieuNai, sanPham, tachDon, tinhGiam, traGiaMoi, trangThaiKho, tuXuLyTraHang, voucherMoi,
 } from './shop_logic.js';
 
@@ -117,6 +117,7 @@ export async function datHang(nd, tham) {
       tx.set(vouchers().doc(voucherCode).collection('used').doc(nd.uid), { at: now });
     }
     for (const don of dons) {
+      tx.set(shopStats(don.shopId), { orderCount: FieldValue.increment(1) }, { merge: true });
       const ref = orders().doc();
       ids.push(ref.id);
       tx.create(ref, {
@@ -174,6 +175,14 @@ function moc(ghi) {
 async function apDung(tx, ref, don, kq) {
   const ghiKho = kq.hoanKho ? await hoanKho(tx, don) : () => {};
   ghiKho();
+  const dem = demHieuSuat(don, kq);
+  if (Object.keys(dem).length) {
+    tx.set(
+      shopStats(don.shopId),
+      Object.fromEntries(Object.entries(dem).map(([k, v]) => [k, FieldValue.increment(v)])),
+      { merge: true },
+    );
+  }
   if (kq.ghi.status === 'cancelled' && don.voucherCode) {
     const v = vouchers().doc(don.voucherCode);
     tx.update(v, { usedCount: FieldValue.increment(-1) });
