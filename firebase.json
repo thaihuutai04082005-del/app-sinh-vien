@@ -1,13 +1,6 @@
 {
   "flutter": {
     "platforms": {
-      "android": {
-        "default": {
-          "projectId": "app-sinh-vien-b6ea4",
-          "appId": "1:949173303262:android:c3a064a5a60523b2940f4f",
-          "fileOutput": "android/app/google-services.json"
-        }
-      },
       "dart": {
         "lib/firebase_options.dart": {
           "projectId": "app-sinh-vien-b6ea4",
