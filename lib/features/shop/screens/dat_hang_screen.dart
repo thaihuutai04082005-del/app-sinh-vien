@@ -6,7 +6,7 @@ import '../models/gio_hang.dart';
 import '../services/shop_dich_vu.dart';
 import 'don_hang_list_screen.dart';
 
-/// Thanh toán: thông tin nhận hàng, cách nhận, thanh toán khi nhận (COD).
+/// Thanh toán: thông tin nhận hàng, cách nhận, COD hoặc online (giả lập, app giữ tiền).
 /// Server tính lại giá, trừ tồn kho và tách đơn theo shop.
 class DatHangScreen extends StatefulWidget {
   const DatHangScreen({
@@ -33,6 +33,7 @@ class _DatHangScreenState extends State<DatHangScreen> {
   final _diaChi = TextEditingController();
   final _ghiChu = TextEditingController();
   String _cachNhan = 'giao_tan_tro';
+  String _thanhToan = 'cod';
   bool _dangGui = false;
   String? _loi;
 
@@ -66,6 +67,7 @@ class _DatHangScreenState extends State<DatHangScreen> {
           deliveryMethod: _cachNhan,
           address: _diaChi.text.trim(),
           note: _ghiChu.text.trim(),
+          paymentMethod: _thanhToan,
         ),
       );
       if (widget.tuGioHang) {
@@ -181,14 +183,36 @@ class _DatHangScreenState extends State<DatHangScreen> {
                 labelText: 'Lời nhắn cho shop (không bắt buộc)',
               ),
             ),
-            const Card(
-              child: ListTile(
-                leading: Icon(Icons.payments_outlined),
-                title: Text('Thanh toán khi nhận hàng (COD)'),
-                subtitle: Text(
-                  'Shop phải xác nhận trong 2 ngày, quá hạn đơn tự hủy.',
-                ),
+            Text(
+              'Thanh toán',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
+            ),
+            RadioGroup<String>(
+              groupValue: _thanhToan,
+              onChanged: (v) => setState(() => _thanhToan = v!),
+              child: Column(
+                children: [
+                  for (final e in DonHang.paymentLabels.entries)
+                    RadioListTile<String>(
+                      contentPadding: EdgeInsets.zero,
+                      value: e.key,
+                      title: Text(e.value),
+                      subtitle: e.key == 'online'
+                          ? const Text(
+                              'App giữ tiền, chỉ chuyển cho shop khi bạn xác nhận '
+                              'đã nhận hàng đúng mô tả.',
+                            )
+                          : null,
+                    ),
+                ],
+              ),
+            ),
+            Text(
+              'Shop phải xác nhận trong 2 ngày, quá hạn đơn tự hủy. '
+              'Shop báo đã giao thì bạn có 3 ngày để yêu cầu trả hàng.',
+              style: theme.textTheme.bodySmall,
             ),
             if (_soShop > 1)
               Padding(

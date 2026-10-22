@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../auth/models/xac_thuc.dart';
 import '../../../shared/widgets/async_list_view.dart';
 import '../models/product.dart';
 import '../services/shop_dich_vu.dart';
@@ -8,6 +9,7 @@ import 'dang_san_pham_screen.dart';
 import 'don_hang_list_screen.dart';
 import 'gio_hang_screen.dart';
 import 'kenh_nguoi_ban_screen.dart';
+import 'phan_xu_tra_hang_screen.dart';
 import 'san_pham_detail_screen.dart';
 
 /// Sảnh Shop đồ rẻ (mục 3.4): duyệt theo danh mục / mức giá, giỏ hàng,
@@ -28,6 +30,9 @@ class _ShopScreenState extends State<ShopScreen> {
   late Future<List<Product>> _hienThi = _loc();
   String? _danhMuc;
   int? _giaToiDa;
+  late final Stream<QuyenAdmin> _quyen = widget.dv.xacThuc.quyenAdmin(
+    widget.dv.uid,
+  );
 
   Future<List<Product>> _loc() => _tatCa.then(
     (ds) => [
@@ -69,6 +74,16 @@ class _ShopScreenState extends State<ShopScreen> {
       appBar: AppBar(
         title: const Text('Shop đồ rẻ'),
         actions: [
+          StreamBuilder<QuyenAdmin>(
+            stream: _quyen,
+            builder: (context, snap) => snap.data?.shop == true
+                ? IconButton(
+                    tooltip: 'Phân xử trả hàng',
+                    onPressed: () => _mo(PhanXuTraHangScreen(dv: widget.dv)),
+                    icon: const Icon(Icons.gavel_outlined),
+                  )
+                : const SizedBox.shrink(),
+          ),
           IconButton(
             tooltip: 'Đơn mua',
             onPressed: () =>

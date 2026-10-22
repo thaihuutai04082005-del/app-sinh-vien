@@ -118,6 +118,8 @@ class FakeDonHangService implements DonHangService {
             phone: nhan.phone,
             address: nhan.address,
             deliveryMethod: nhan.deliveryMethod,
+            paymentMethod: nhan.paymentMethod,
+            paid: nhan.paymentMethod == 'online',
             items: [
               for (final d in e.value)
                 MonTrongDon(
@@ -166,6 +168,7 @@ class FakeDonHangService implements DonHangService {
     String orderId,
     String hanhDong, {
     String? reason,
+    List<String>? images,
   }) async {
     thaoTacDaLam.add((orderId, hanhDong, reason));
     final sang = {
@@ -174,30 +177,93 @@ class FakeDonHangService implements DonHangService {
       'daGiao': 'delivered',
       'daNhan': 'buyer_confirmed',
       'huy': 'cancelled',
+      'yeuCauTraHang': 'return_requested',
+      'dongYTraHang': 'return_refund',
+      'tuChoiTraHang': 'return_rejected',
+      'khieuNai': 'return_disputed',
     }[hanhDong];
     if (sang == null) throw const ApiException('Hành động không hợp lệ.');
-    _doi(
-      orderId,
-      (d) => DonHang(
-        id: d.id,
-        buyerId: d.buyerId,
-        shopId: d.shopId,
-        buyerName: d.buyerName,
-        shopName: d.shopName,
-        items: d.items,
-        totalPrice: d.totalPrice,
-        status: sang,
-        cancelReason: reason,
-        cancelledBy: hanhDong == 'huy'
-            ? (uid == d.shopId ? 'shop' : 'buyer')
-            : null,
-      ),
-    );
+    _doi(orderId, (d) {
+      final online = d.paymentMethod == 'online';
+      return {
+        'status': sang,
+        if (hanhDong == 'huy') ...{
+          'cancelReason': reason,
+          'cancelledBy': uid == d.shopId ? 'shop' : 'buyer',
+        },
+        if (hanhDong == 'yeuCauTraHang') ...{
+          'returnReason': reason,
+          'returnImages': images ?? const <String>[],
+        },
+        if (hanhDong == 'tuChoiTraHang') 'returnRejectReason': reason,
+        if (hanhDong == 'khieuNai') 'disputeReason': reason,
+        if (online && sang == 'buyer_confirmed') 'fundsReleased': true,
+        if (online && (sang == 'cancelled' || sang == 'return_refund'))
+          'refunded': true,
+      };
+    });
   }
 
-  void _doi(String orderId, DonHang Function(DonHang) f) {
+  @override
+  Future<List<DonHang>> donKhieuNai() async => [
+    for (final d in kho.orders)
+      if (d.status == 'return_disputed') d,
+  ];
+
+  @override
+  Future<void> xuLyKhieuNai(
+    String orderId, {
+    required bool dongY,
+    required String lyDo,
+  }) async => _doi(
+    orderId,
+    (d) => {
+      'status': dongY ? 'return_refund' : 'buyer_confirmed',
+      'disputeResult': lyDo,
+    },
+  );
+
+  /// Ghi đè vài trường của đơn, giữ nguyên phần còn lại.
+  void _doi(String orderId, Map<String, dynamic> Function(DonHang) doi) {
     final i = kho.orders.indexWhere((d) => d.id == orderId);
-    kho.orders[i] = f(kho.orders[i]);
+    final d = kho.orders[i];
+    kho.orders[i] = DonHang.fromMap({
+      'id': d.id,
+      'buyerId': d.buyerId,
+      'shopId': d.shopId,
+      'buyerName': d.buyerName,
+      'shopName': d.shopName,
+      'items': [
+        for (final m in d.items)
+          {
+            'productId': m.productId,
+            'name': m.name,
+            'image': m.image,
+            'price': m.price,
+            'size': m.size,
+            'quantity': m.quantity,
+          },
+      ],
+      'totalPrice': d.totalPrice,
+      'status': d.status,
+      'receiverName': d.receiverName,
+      'phone': d.phone,
+      'deliveryMethod': d.deliveryMethod,
+      'address': d.address,
+      'paymentMethod': d.paymentMethod,
+      'paid': d.paid,
+      'fundsReleased': d.fundsReleased,
+      'refunded': d.refunded,
+      'reviewed': d.reviewed,
+      'cancelReason': d.cancelReason,
+      'cancelledBy': d.cancelledBy,
+      'returnReason': d.returnReason,
+      'returnImages': d.returnImages,
+      'returnRejectReason': d.returnRejectReason,
+      'disputeReason': d.disputeReason,
+      'disputeResult': d.disputeResult,
+      ...doi(d),
+    });
   }
 
   @override
@@ -212,20 +278,7 @@ class FakeDonHangService implements DonHangService {
       danhGia,
       productIds: [for (final m in d.items) m.productId],
     );
-    _doi(
-      orderId,
-      (d) => DonHang(
-        id: d.id,
-        buyerId: d.buyerId,
-        shopId: d.shopId,
-        buyerName: d.buyerName,
-        shopName: d.shopName,
-        items: d.items,
-        totalPrice: d.totalPrice,
-        status: d.status,
-        reviewed: true,
-      ),
-    );
+    _doi(orderId, (_) => {'reviewed': true});
   }
 }
 

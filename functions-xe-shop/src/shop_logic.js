@@ -96,17 +96,46 @@ export function tachDon(items, sanPhams, buyerId) {
   return { dons: [...theoShop.values()], tonKhoMoi };
 }
 
+/** Thời gian khách được yêu cầu trả hàng sau khi shop báo đã giao; hết hạn thì đơn tự hoàn tất. */
+export const HAN_TRA_HANG_MS = 3 * 86_400_000;
+/** Shop phải trả lời yêu cầu trả hàng trong thời gian này, quá hạn coi như đồng ý. */
+export const HAN_TRA_LOI_TRA_HANG_MS = 2 * 86_400_000;
+export const CACH_THANH_TOAN = ['cod', 'online'];
+
+/**
+ * Bảng chuyển trạng thái (mục 3.4): hành động → ai làm và từ trạng thái nào sang trạng thái nào.
+ * Trả hàng: đã giao → khách yêu cầu → shop đồng ý (hoàn tiền) hoặc từ chối → khách nhận
+ * hoặc khiếu nại để admin Shop phân xử (xuLyKhieuNai).
+ */
 const CHUYEN = {
   xacNhan: { ai: 'shop', tu: ['pending_confirmation'], sang: 'to_ship' },
   giaoHang: { ai: 'shop', tu: ['to_ship'], sang: 'shipping' },
   daGiao: { ai: 'shop', tu: ['shipping'], sang: 'delivered' },
-  daNhan: { ai: 'buyer', tu: ['shipping', 'delivered'], sang: 'buyer_confirmed' },
+  daNhan: { ai: 'buyer', tu: ['shipping', 'delivered', 'return_rejected'], sang: 'buyer_confirmed' },
   huy: { ai: 'ca_hai', tu: ['pending_confirmation', 'to_ship'], sang: 'cancelled' },
+  yeuCauTraHang: { ai: 'buyer', tu: ['delivered'], sang: 'return_requested' },
+  dongYTraHang: { ai: 'shop', tu: ['return_requested'], sang: 'return_refund' },
+  tuChoiTraHang: { ai: 'shop', tu: ['return_requested'], sang: 'return_rejected' },
+  khieuNai: { ai: 'buyer', tu: ['return_rejected'], sang: 'return_disputed' },
 };
 
 export const HANH_DONG_DON = Object.keys(CHUYEN);
 
-/** Trả về { ghi, lichSuMoi, hoanKho } khi `uid` làm `hanhDong` trên đơn; ném lỗi nếu không được. */
+/** Mốc thời gian trong đơn: số mili giây (test) hoặc Timestamp của Firestore. */
+const ms = (v) => (typeof v === 'number' ? v : v?.toMillis?.() ?? null);
+
+/** Tiền đi đâu khi đơn kết thúc: chỉ đơn trả online mới có tiền app đang giữ. */
+function tien(don, sang) {
+  if (don.paymentMethod !== 'online') return {};
+  if (sang === 'buyer_confirmed') return { fundsReleased: true };
+  if (sang === 'cancelled' || sang === 'return_refund') return { refunded: true };
+  return {};
+}
+
+/**
+ * Trả về { ghi, lichSuMoi, hoanKho } khi `uid` làm `hanhDong` trên đơn; ném lỗi nếu không được.
+ * Các mốc hạn trong `ghi` (returnDeadline, returnResponseDeadline) là mili giây.
+ */
 export function chuyenTrangThaiDon(don, hanhDong, uid, tham, now) {
   const quy = CHUYEN[hanhDong];
   if (!quy) throw thamSoSai('Hành động không hợp lệ.');
@@ -117,19 +146,76 @@ export function chuyenTrangThaiDon(don, hanhDong, uid, tham, now) {
     throw loi('Shop đã xác nhận đơn, bạn không thể hủy nữa.');
   }
   if (!quy.tu.includes(don.status)) throw loi('Đơn không còn ở trạng thái làm được việc này.');
-
-  const ghi = { status: quy.sang };
-  if (hanhDong === 'huy') {
-    ghi.cancelledBy = vaiTro;
-    ghi.cancelReason = chuoi(tham.reason, 'Lý do hủy', { max: 300 });
+  if (hanhDong === 'yeuCauTraHang' && ms(don.returnDeadline) != null && ms(don.returnDeadline) < now) {
+    throw loi('Đã quá hạn yêu cầu trả hàng.');
   }
-  return { ghi, lichSuMoi: { status: quy.sang, by: vaiTro, at: now }, hoanKho: hanhDong === 'huy' };
+
+  const ghi = { status: quy.sang, ...tien(don, quy.sang) };
+  const lichSuMoi = { status: quy.sang, by: vaiTro, at: now };
+  switch (hanhDong) {
+    case 'huy':
+      ghi.cancelledBy = vaiTro;
+      ghi.cancelReason = chuoi(tham.reason, 'Lý do hủy', { max: 300 });
+      break;
+    case 'daGiao':
+      ghi.returnDeadline = now + HAN_TRA_HANG_MS;
+      break;
+    case 'yeuCauTraHang':
+      ghi.returnReason = chuoi(tham.reason, 'Lý do trả hàng', { max: 500 });
+      ghi.returnImages = danhSachLink(tham.images, 'ảnh', { max: 5 });
+      ghi.returnResponseDeadline = now + HAN_TRA_LOI_TRA_HANG_MS;
+      break;
+    case 'tuChoiTraHang':
+      ghi.returnRejectReason = chuoi(tham.reason, 'Lý do từ chối', { max: 500 });
+      break;
+    case 'khieuNai':
+      ghi.disputeReason = chuoi(tham.reason, 'Nội dung khiếu nại', { max: 500 });
+      break;
+  }
+  return { ghi, lichSuMoi, hoanKho: quy.sang === 'cancelled' || quy.sang === 'return_refund' };
+}
+
+/** Admin Shop phân xử khiếu nại trả hàng: đồng ý thì hoàn tiền cho khách, không thì đơn hoàn tất. */
+export function phanXuKhieuNai(don, tham, now) {
+  if (don.status !== 'return_disputed') throw loi('Đơn này không còn chờ phân xử.');
+  if (typeof tham.dongY !== 'boolean') throw thamSoSai();
+  const sang = tham.dongY ? 'return_refund' : 'buyer_confirmed';
+  return {
+    ghi: { status: sang, ...tien(don, sang), disputeResult: chuoi(tham.lyDo, 'Kết luận', { max: 500 }) },
+    lichSuMoi: { status: sang, by: 'admin', at: now },
+    hoanKho: tham.dongY,
+  };
 }
 
 /** Đơn quá hạn shop xác nhận thì hệ thống tự hủy. */
-export function huyQuaHan(now) {
+export function huyQuaHan(now, don = {}) {
   return {
-    ghi: { status: 'cancelled', cancelledBy: 'system', cancelReason: 'Shop không xác nhận đơn trong 2 ngày.' },
+    ghi: {
+      status: 'cancelled',
+      ...tien(don, 'cancelled'),
+      cancelledBy: 'system',
+      cancelReason: 'Shop không xác nhận đơn trong 2 ngày.',
+    },
     lichSuMoi: { status: 'cancelled', by: 'system', at: now },
   };
+}
+
+/**
+ * Việc hệ thống tự làm khi tới hạn: hết hạn trả hàng thì đơn hoàn tất (tiền chuyển cho shop);
+ * shop không trả lời yêu cầu trả hàng thì coi như đồng ý. Trả về null nếu chưa tới hạn.
+ */
+export function tuXuLyTraHang(don, now) {
+  const tra = (sang, hoanKho) => ({
+    ghi: { status: sang, ...tien(don, sang) },
+    lichSuMoi: { status: sang, by: 'system', at: now },
+    hoanKho,
+  });
+  if (don.status === 'delivered' && ms(don.returnDeadline) != null && ms(don.returnDeadline) <= now) {
+    return tra('buyer_confirmed', false);
+  }
+  if (don.status === 'return_requested' && ms(don.returnResponseDeadline) != null
+      && ms(don.returnResponseDeadline) <= now) {
+    return tra('return_refund', true);
+  }
+  return null;
 }

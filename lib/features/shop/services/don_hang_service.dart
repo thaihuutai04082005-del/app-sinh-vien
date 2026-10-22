@@ -14,8 +14,25 @@ abstract interface class DonHangService {
   Future<List<DonHang>> donBan();
   Future<DonHang> getDon(String id);
 
-  /// hanhDong: xacNhan | giaoHang | daGiao | daNhan | huy (cần [reason]).
-  Future<void> thaoTac(String orderId, String hanhDong, {String? reason});
+  /// hanhDong: xacNhan | giaoHang | daGiao | daNhan | huy (cần [reason])
+  /// | yeuCauTraHang (cần [reason], kèm [images]) | dongYTraHang
+  /// | tuChoiTraHang (cần [reason]) | khieuNai (cần [reason]).
+  Future<void> thaoTac(
+    String orderId,
+    String hanhDong, {
+    String? reason,
+    List<String>? images,
+  });
+
+  /// Admin Shop: đơn đang khiếu nại trả hàng.
+  Future<List<DonHang>> donKhieuNai();
+
+  /// Admin Shop phân xử: đồng ý thì hoàn tiền cho người mua, không thì đơn hoàn tất.
+  Future<void> xuLyKhieuNai(
+    String orderId, {
+    required bool dongY,
+    required String lyDo,
+  });
 
   /// Người mua đánh giá đơn đã nhận (3 tiêu chí), mỗi đơn một lần.
   Future<void> danhGia(String orderId, DanhGiaNhap danhGia);
@@ -70,12 +87,41 @@ class FirebaseDonHangService implements DonHangService {
   }
 
   @override
-  Future<void> thaoTac(String orderId, String hanhDong, {String? reason}) =>
-      _api.goi('thaoTacDon', {
-        'orderId': orderId,
-        'hanhDong': hanhDong,
-        'reason': ?reason,
-      });
+  Future<void> thaoTac(
+    String orderId,
+    String hanhDong, {
+    String? reason,
+    List<String>? images,
+  }) => _api.goi('thaoTacDon', {
+    'orderId': orderId,
+    'hanhDong': hanhDong,
+    'reason': ?reason,
+    'images': ?images,
+  });
+
+  @override
+  Future<List<DonHang>> donKhieuNai() async {
+    // Chỉ lọc một trường nên không cần chỉ mục ghép; sắp xếp ở app.
+    final snap = await _orders
+        .where('status', isEqualTo: 'return_disputed')
+        .limit(100)
+        .get();
+    return snap.docs.map(_fromDoc).toList()..sort(
+      (a, b) =>
+          (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0)),
+    );
+  }
+
+  @override
+  Future<void> xuLyKhieuNai(
+    String orderId, {
+    required bool dongY,
+    required String lyDo,
+  }) => _api.goi('xuLyKhieuNai', {
+    'orderId': orderId,
+    'dongY': dongY,
+    'lyDo': lyDo,
+  });
 
   @override
   Future<void> danhGia(String orderId, DanhGiaNhap danhGia) =>

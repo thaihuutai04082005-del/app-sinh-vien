@@ -75,10 +75,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Đơn hàng có địa chỉ, số điện thoại: chỉ người mua và shop của đơn.
+    // Đơn hàng có địa chỉ, số điện thoại: chỉ người mua và shop của đơn; admin Shop để phân xử trả hàng.
     match /orders/{id} {
       allow read: if request.auth != null
-        && (resource.data.buyerId == request.auth.uid || resource.data.shopId == request.auth.uid);
+        && (resource.data.buyerId == request.auth.uid || resource.data.shopId == request.auth.uid
+          || laAdmin('shop'));
       allow write: if false;
     }
 

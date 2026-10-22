@@ -38,16 +38,16 @@ class _DonHangListScreenState extends State<DonHangListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const trangThai = DonHang.statusLabels;
+    const tabs = DonHang.tabs;
     return DefaultTabController(
-      length: trangThai.length,
+      length: tabs.length,
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.laNguoiBan ? 'Đơn bán' : 'Đơn mua'),
           bottom: TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            tabs: [for (final l in trangThai.values) Tab(text: l)],
+            tabs: [for (final l in tabs.keys) Tab(text: l)],
           ),
         ),
         body: FutureBuilder<List<DonHang>>(
@@ -67,10 +67,10 @@ class _DonHangListScreenState extends State<DonHangListScreen> {
             final tatCa = snap.data!;
             return TabBarView(
               children: [
-                for (final s in trangThai.keys)
+                for (final s in tabs.values)
                   _danhSach(context, [
                     for (final d in tatCa)
-                      if (d.status == s) d,
+                      if (s.contains(d.status)) d,
                   ]),
               ],
             );

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { chuyenTrangThaiDon, gioHang, huyQuaHan, nhanHang, sanPham, tachDon } from '../src/shop_logic.js';
+import {
+  chuyenTrangThaiDon, gioHang, huyQuaHan, nhanHang, phanXuKhieuNai, sanPham, tachDon, tuXuLyTraHang,
+} from '../src/shop_logic.js';
 
 const NOW = Date.UTC(2026, 9, 13, 3);
 const loiCo = (re) => (e) => re.test(e.message);
@@ -124,4 +126,73 @@ test('hệ thống tự hủy đơn quá hạn', () => {
   const kq = huyQuaHan(NOW);
   assert.equal(kq.ghi.cancelledBy, 'system');
   assert.equal(kq.lichSuMoi.at, NOW);
+});
+
+const H = 86_400_000;
+
+test('đã giao thì có hạn trả hàng 3 ngày; hết hạn hệ thống tự hoàn tất, chuyển tiền cho shop', () => {
+  const kq = chuyenTrangThaiDon(don('shipping'), 'daGiao', 's', {}, NOW);
+  assert.equal(kq.ghi.returnDeadline, NOW + 3 * H);
+  const d = { ...don('delivered'), paymentMethod: 'online', returnDeadline: NOW + 3 * H };
+  assert.equal(tuXuLyTraHang(d, NOW + 2 * H), null);
+  const het = tuXuLyTraHang(d, NOW + 3 * H);
+  assert.deepEqual(het.ghi, { status: 'buyer_confirmed', fundsReleased: true });
+  assert.equal(het.lichSuMoi.by, 'system');
+  // COD: tiền đã trả tận tay, không có gì để giữ / chuyển.
+  assert.deepEqual(tuXuLyTraHang({ ...d, paymentMethod: 'cod' }, NOW + 3 * H).ghi, { status: 'buyer_confirmed' });
+});
+
+test('trả hàng: khách yêu cầu kèm lý do trong hạn; shop đồng ý thì hoàn tiền, hoàn kho', () => {
+  const d = { ...don('delivered'), paymentMethod: 'online', returnDeadline: NOW + H };
+  assert.throws(() => chuyenTrangThaiDon(d, 'yeuCauTraHang', 'm', {}, NOW), loiCo(/lý do trả hàng/));
+  assert.throws(() => chuyenTrangThaiDon(d, 'yeuCauTraHang', 'm', { reason: 'Rách' }, NOW + 2 * H), loiCo(/quá hạn/));
+  assert.throws(() => chuyenTrangThaiDon(d, 'yeuCauTraHang', 's', { reason: 'x' }, NOW), loiCo(/quyền/));
+  assert.throws(() => chuyenTrangThaiDon(don('buyer_confirmed'), 'yeuCauTraHang', 'm', { reason: 'x' }, NOW), loiCo(/trạng thái/));
+
+  const yc = chuyenTrangThaiDon(d, 'yeuCauTraHang', 'm', { reason: 'Áo rách', images: ['https://x/r.jpg'] }, NOW);
+  assert.equal(yc.ghi.status, 'return_requested');
+  assert.equal(yc.ghi.returnReason, 'Áo rách');
+  assert.deepEqual(yc.ghi.returnImages, ['https://x/r.jpg']);
+  assert.equal(yc.ghi.returnResponseDeadline, NOW + 2 * H);
+  assert.equal(yc.hoanKho, false);
+
+  const dy = chuyenTrangThaiDon({ ...d, ...yc.ghi }, 'dongYTraHang', 's', {}, NOW);
+  assert.deepEqual(dy.ghi, { status: 'return_refund', refunded: true });
+  assert.equal(dy.hoanKho, true);
+});
+
+test('shop im lặng quá 2 ngày thì coi như đồng ý trả hàng', () => {
+  const d = { ...don('return_requested'), returnResponseDeadline: NOW };
+  const kq = tuXuLyTraHang(d, NOW);
+  assert.equal(kq.ghi.status, 'return_refund');
+  assert.equal(kq.hoanKho, true);
+  assert.equal(tuXuLyTraHang({ ...d, returnResponseDeadline: NOW + 1 }, NOW), null);
+});
+
+test('shop từ chối phải có lý do; khách nhận hàng hoặc khiếu nại; admin phân xử', () => {
+  const d = { ...don('return_requested'), paymentMethod: 'online' };
+  assert.throws(() => chuyenTrangThaiDon(d, 'tuChoiTraHang', 's', {}, NOW), loiCo(/lý do từ chối/));
+  const tc = chuyenTrangThaiDon(d, 'tuChoiTraHang', 's', { reason: 'Hàng đã giặt' }, NOW);
+  assert.equal(tc.ghi.status, 'return_rejected');
+  const bi = { ...d, ...tc.ghi };
+  assert.equal(chuyenTrangThaiDon(bi, 'daNhan', 'm', {}, NOW).ghi.fundsReleased, true);
+  assert.throws(() => chuyenTrangThaiDon(bi, 'khieuNai', 'm', {}, NOW), loiCo(/khiếu nại/));
+  const kn = { ...bi, ...chuyenTrangThaiDon(bi, 'khieuNai', 'm', { reason: 'Chưa giặt' }, NOW).ghi };
+  assert.equal(kn.status, 'return_disputed');
+
+  assert.throws(() => phanXuKhieuNai(bi, { dongY: true, lyDo: 'x' }, NOW), loiCo(/không còn chờ/));
+  assert.throws(() => phanXuKhieuNai(kn, { dongY: true }, NOW), loiCo(/kết luận/));
+  const dongY = phanXuKhieuNai(kn, { dongY: true, lyDo: 'Ảnh cho thấy rách sẵn' }, NOW);
+  assert.equal(dongY.ghi.status, 'return_refund');
+  assert.equal(dongY.ghi.refunded, true);
+  assert.equal(dongY.hoanKho, true);
+  assert.equal(dongY.lichSuMoi.by, 'admin');
+  const khong = phanXuKhieuNai(kn, { dongY: false, lyDo: 'Không đủ bằng chứng' }, NOW);
+  assert.deepEqual([khong.ghi.status, khong.ghi.fundsReleased, khong.hoanKho], ['buyer_confirmed', true, false]);
+});
+
+test('đơn online bị hủy thì hoàn tiền', () => {
+  const kq = chuyenTrangThaiDon({ ...don('pending_confirmation'), paymentMethod: 'online' }, 'huy', 'm', { reason: 'x' }, NOW);
+  assert.equal(kq.ghi.refunded, true);
+  assert.equal(huyQuaHan(NOW, { paymentMethod: 'online' }).ghi.refunded, true);
 });

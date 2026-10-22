@@ -1,5 +1,7 @@
+import 'package:app_sinh_vien/features/auth/models/xac_thuc.dart';
 import 'package:app_sinh_vien/features/shop/models/don_hang.dart';
 import 'package:app_sinh_vien/features/shop/models/gio_hang.dart';
+import 'package:app_sinh_vien/features/shop/screens/dat_hang_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/don_hang_detail_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/san_pham_detail_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/shop_screen.dart';
@@ -264,6 +266,139 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'thanh toán online: app giữ tiền, nhận hàng xong mới chuyển shop',
+    (tester) async {
+      final kho = KhoGia()..products.add(sanPhamMau(id: 'a', sizes: const []));
+      final mua = shopDv(kho, 'mua');
+      await _pump(
+        tester,
+        DatHangScreen(
+          dv: mua,
+          dong: [DongGio.tu(kho.products.single, size: '', quantity: 1)],
+        ),
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Tên người nhận'),
+        'An',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Số điện thoại'),
+        '0912345678',
+      );
+      await tester.tap(find.text('Hẹn lấy trực tiếp'));
+      await tester.tap(find.text('Thanh toán online (giả lập)'));
+      await tester.pump();
+      await tester.tap(find.textContaining('Đặt hàng ·'));
+      await tester.pumpAndSettle();
+
+      final id = kho.orders.single.id;
+      expect(kho.orders.single.paymentMethod, 'online');
+      // Bỏ màn danh sách đơn vừa mở sau khi đặt.
+      await tester.pumpWidget(const SizedBox());
+      await _pump(tester, DonHangDetailScreen(dv: mua, orderId: id));
+      expect(find.text('Tổng tiền (online)'), findsOneWidget);
+      expect(find.textContaining('app đang giữ tiền'), findsOneWidget);
+
+      await mua.donHang.thaoTac(id, 'daNhan');
+      expect(kho.orders.single.fundsReleased, isTrue);
+    },
+  );
+
+  testWidgets(
+    'trả hàng: khách yêu cầu, shop từ chối, khách khiếu nại, admin hoàn tiền',
+    (tester) async {
+      final kho = KhoGia()..products.add(sanPhamMau(id: 'a', sizes: const []));
+      final mua = shopDv(kho, 'mua');
+      await mua.donHang.datHang(
+        [DongGio.tu(kho.products.single, size: '', quantity: 1)],
+        const ThongTinNhan(
+          receiverName: 'An',
+          phone: '0912345678',
+          deliveryMethod: 'hen_lay',
+          paymentMethod: 'online',
+        ),
+      );
+      final id = kho.orders.single.id;
+      final ban = shopDv(kho, 'ban');
+      for (final hd in ['xacNhan', 'giaoHang', 'daGiao']) {
+        await ban.donHang.thaoTac(id, hd);
+      }
+
+      // Người mua: yêu cầu trả hàng phải có lý do.
+      await _pump(tester, DonHangDetailScreen(dv: mua, orderId: id));
+      await tester.tap(find.text('Yêu cầu trả hàng / hoàn tiền'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Gửi yêu cầu'));
+      await tester.pump();
+      expect(find.text('Nhập lý do trả hàng'), findsOneWidget);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Lý do trả hàng'),
+        'Áo bị rách vai',
+      );
+      await tester.tap(find.text('Gửi yêu cầu'));
+      await tester.pumpAndSettle();
+      expect(kho.orders.single.status, 'return_requested');
+      expect(
+        find.textContaining('Áo bị rách vai', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.text('Đã nhận hàng đúng mô tả'), findsNothing);
+
+      // Shop từ chối kèm lý do.
+      await _pump(tester, DonHangDetailScreen(dv: ban, orderId: id));
+      await tester.tap(find.text('Từ chối trả hàng'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Hàng đã qua sử dụng');
+      await tester.tap(find.widgetWithText(FilledButton, 'Từ chối'));
+      await tester.pumpAndSettle();
+      expect(kho.orders.single.status, 'return_rejected');
+
+      // Người mua khiếu nại.
+      await _pump(
+        tester,
+        DonHangDetailScreen(key: UniqueKey(), dv: mua, orderId: id),
+      );
+      expect(
+        find.textContaining('Hàng đã qua sử dụng', findRichText: true),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Khiếu nại lên admin'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Rách từ lúc nhận');
+      await tester.tap(find.widgetWithText(FilledButton, 'Gửi khiếu nại'));
+      await tester.pumpAndSettle();
+      expect(kho.orders.single.status, 'return_disputed');
+
+      // Admin Shop thấy đơn trong màn phân xử và hoàn tiền.
+      final admin = shopDv(
+        kho,
+        'ad',
+        xacThuc: XacThucGia.day()..quyen = const QuyenAdmin(shop: true),
+      );
+      await _pumpShop(tester, admin);
+      await tester.tap(find.byTooltip('Phân xử trả hàng'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Shop ban'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hoàn tiền cho người mua'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Ảnh cho thấy rách sẵn');
+      await tester.tap(find.widgetWithText(FilledButton, 'Xác nhận'));
+      await tester.pumpAndSettle();
+      expect(kho.orders.single.status, 'return_refund');
+      expect(
+        find.text('Kết luận của admin: Ảnh cho thấy rách sẵn'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('người thường không thấy nút phân xử trả hàng', (tester) async {
+    await _pumpShop(tester, shopDv(KhoGia(), 'mua'));
+    expect(find.byTooltip('Phân xử trả hàng'), findsNothing);
+  });
 
   test(
     'giỏ hàng lưu lại theo tài khoản và kẹp số lượng theo tồn kho',

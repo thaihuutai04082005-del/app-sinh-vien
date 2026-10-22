@@ -51,6 +51,16 @@ class DonHang {
     this.createdAt,
     this.lichSu = const [],
     this.reviewed = false,
+    this.paid = false,
+    this.fundsReleased = false,
+    this.refunded = false,
+    this.returnDeadline,
+    this.returnResponseDeadline,
+    this.returnReason,
+    this.returnImages = const [],
+    this.returnRejectReason,
+    this.disputeReason,
+    this.disputeResult,
   });
 
   final String id;
@@ -60,6 +70,7 @@ class DonHang {
   final num totalPrice;
 
   /// pending_confirmation | to_ship | shipping | delivered | buyer_confirmed | cancelled
+  /// | return_requested | return_rejected | return_disputed | return_refund
   final String status;
   final String buyerName;
   final String shopName;
@@ -70,7 +81,27 @@ class DonHang {
   final String deliveryMethod;
   final String address;
   final String note;
+
+  /// cod | online (thanh toán giả lập, app giữ tiền đến khi khách xác nhận nhận hàng).
   final String paymentMethod;
+
+  /// Đơn online: đã trả tiền / tiền đã chuyển cho shop / đã hoàn lại cho khách.
+  final bool paid;
+  final bool fundsReleased;
+  final bool refunded;
+
+  /// Hạn khách yêu cầu trả hàng (tính từ lúc shop báo đã giao), quá hạn đơn tự hoàn tất.
+  final DateTime? returnDeadline;
+
+  /// Hạn shop trả lời yêu cầu trả hàng, quá hạn coi như đồng ý.
+  final DateTime? returnResponseDeadline;
+  final String? returnReason;
+  final List<String> returnImages;
+  final String? returnRejectReason;
+  final String? disputeReason;
+
+  /// Kết luận của admin Shop khi phân xử khiếu nại.
+  final String? disputeResult;
 
   /// buyer | shop | system
   final String? cancelledBy;
@@ -93,12 +124,46 @@ class DonHang {
     'delivered': 'Đã giao',
     'buyer_confirmed': 'Hoàn tất',
     'cancelled': 'Đã hủy',
+    'return_requested': 'Yêu cầu trả hàng',
+    'return_rejected': 'Shop từ chối trả',
+    'return_disputed': 'Đang khiếu nại',
+    'return_refund': 'Đã trả hàng / hoàn tiền',
   };
+
+  /// Tab trong danh sách đơn: tên tab → các trạng thái thuộc tab đó.
+  static const tabs = {
+    'Chờ xác nhận': ['pending_confirmation'],
+    'Chờ lấy hàng': ['to_ship'],
+    'Đang giao': ['shipping'],
+    'Đã giao': ['delivered'],
+    'Hoàn tất': ['buyer_confirmed'],
+    'Trả hàng / Hoàn tiền': [
+      'return_requested',
+      'return_rejected',
+      'return_disputed',
+      'return_refund',
+    ],
+    'Đã hủy': ['cancelled'],
+  };
+
+  static const paymentLabels = {
+    'cod': 'Thanh toán khi nhận hàng (COD)',
+    'online': 'Thanh toán online (giả lập)',
+  };
+
+  /// Câu ngắn về tiền của đơn online; null với COD.
+  String? get trangThaiTien {
+    if (paymentMethod != 'online') return null;
+    if (refunded) return 'Đã hoàn tiền cho người mua.';
+    if (fundsReleased) return 'Tiền đã chuyển cho shop.';
+    return 'Đã thanh toán, app đang giữ tiền đến khi người mua xác nhận nhận hàng.';
+  }
 
   static const nguoiLamLabels = {
     'buyer': 'Người mua',
     'shop': 'Shop',
     'system': 'Hệ thống',
+    'admin': 'Admin Shop',
   };
 
   static const deliveryLabels = {
@@ -130,6 +195,18 @@ class DonHang {
     createdAt: docThoiGian(m['createdAt']),
     lichSu: MocTrangThai.docDanhSach(m['lichSu']),
     reviewed: m['reviewed'] as bool? ?? false,
+    paid: m['paid'] as bool? ?? false,
+    fundsReleased: m['fundsReleased'] as bool? ?? false,
+    refunded: m['refunded'] as bool? ?? false,
+    returnDeadline: docThoiGian(m['returnDeadline']),
+    returnResponseDeadline: docThoiGian(m['returnResponseDeadline']),
+    returnReason: m['returnReason'] as String?,
+    returnImages: m['returnImages'] is List
+        ? (m['returnImages'] as List).whereType<String>().toList()
+        : const [],
+    returnRejectReason: m['returnRejectReason'] as String?,
+    disputeReason: m['disputeReason'] as String?,
+    disputeResult: m['disputeResult'] as String?,
   );
 }
 
@@ -141,6 +218,7 @@ class ThongTinNhan {
     required this.deliveryMethod,
     this.address = '',
     this.note = '',
+    this.paymentMethod = 'cod',
   });
 
   final String receiverName;
@@ -149,11 +227,15 @@ class ThongTinNhan {
   final String address;
   final String note;
 
+  /// cod | online
+  final String paymentMethod;
+
   Map<String, dynamic> toMap() => {
     'receiverName': receiverName,
     'phone': phone,
     'deliveryMethod': deliveryMethod,
     'address': address,
     'note': note,
+    'paymentMethod': paymentMethod,
   };
 }

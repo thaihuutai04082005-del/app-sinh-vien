@@ -2,11 +2,12 @@
 // điểm của shop `shop_stats/{shopId}`.
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { khongCoQuyen, khongTimThay, loi } from './loi.js';
-import { chuoi } from './kiem_tra.js';
+import { chuoi, motTrong } from './kiem_tra.js';
 import { TIEU_CHI_SHOP, noiDungDanhGia } from './danh_gia.js';
 import { tangLuotDang } from './tai_khoan.js';
 import {
-  HAN_XAC_NHAN_MS, chuyenTrangThaiDon, gioHang, huyQuaHan, nhanHang, sanPham, tachDon, trangThaiKho,
+  CACH_THANH_TOAN, HAN_XAC_NHAN_MS, chuyenTrangThaiDon, gioHang, huyQuaHan, nhanHang, phanXuKhieuNai, sanPham,
+  tachDon, trangThaiKho, tuXuLyTraHang,
 } from './shop_logic.js';
 
 const products = () => getFirestore().collection('products');
@@ -62,6 +63,8 @@ export async function xoaSanPham(nd, tham) {
 export async function datHang(nd, tham) {
   const items = gioHang(tham.items);
   const giao = nhanHang(tham);
+  // "online" là thanh toán giả lập: coi như đã trả, app giữ tiền đến khi khách xác nhận nhận hàng.
+  const paymentMethod = motTrong(tham.paymentMethod ?? 'cod', CACH_THANH_TOAN, 'Cách thanh toán');
   const dangCho = await orders()
     .where('buyerId', '==', nd.uid)
     .where('status', '==', 'pending_confirmation')
@@ -90,7 +93,9 @@ export async function datHang(nd, tham) {
         ...giao,
         buyerId: nd.uid,
         buyerName: nd.ten,
-        paymentMethod: 'cod',
+        paymentMethod,
+        paid: paymentMethod === 'online',
+        refunded: false,
         voucherCode: null,
         discountAmount: 0,
         offerPrice: null,
@@ -124,6 +129,21 @@ async function hoanKho(tx, don) {
   };
 }
 
+/** Mốc hạn logic trả về dạng mili giây → Timestamp. */
+function moc(ghi) {
+  for (const k of ['returnDeadline', 'returnResponseDeadline']) {
+    if (typeof ghi[k] === 'number') ghi[k] = Timestamp.fromMillis(ghi[k]);
+  }
+  return ghi;
+}
+
+/** Ghi kết quả chuyển trạng thái `kq` vào đơn, trả lại tồn kho nếu cần. */
+async function apDung(tx, ref, don, kq) {
+  const ghiKho = kq.hoanKho ? await hoanKho(tx, don) : () => {};
+  ghiKho();
+  tx.update(ref, { ...moc(kq.ghi), lichSu: FieldValue.arrayUnion(kq.lichSuMoi), updatedAt: FieldValue.serverTimestamp() });
+}
+
 export async function thaoTacDon(nd, tham) {
   const id = chuoi(tham.orderId, 'Đơn hàng', { max: 128 });
   const ref = orders().doc(id);
@@ -131,40 +151,59 @@ export async function thaoTacDon(nd, tham) {
     const snap = await tx.get(ref);
     if (!snap.exists) throw khongTimThay('Đơn hàng');
     const don = snap.data();
-    const kq = chuyenTrangThaiDon(don, tham.hanhDong, nd.uid, tham, Date.now());
-    const ghiKho = kq.hoanKho ? await hoanKho(tx, don) : () => {};
-    ghiKho();
-    tx.update(ref, { ...kq.ghi, lichSu: FieldValue.arrayUnion(kq.lichSuMoi), updatedAt: FieldValue.serverTimestamp() });
+    await apDung(tx, ref, don, chuyenTrangThaiDon(don, tham.hanhDong, nd.uid, tham, Date.now()));
+  });
+  return { id };
+}
+
+/** Admin Shop (admins/{uid}.shop) phân xử đơn khách khiếu nại vì shop từ chối trả hàng. */
+export async function xuLyKhieuNai(nd, tham) {
+  const admin = await getFirestore().collection('admins').doc(nd.uid).get();
+  if (admin.get('shop') !== true) throw khongCoQuyen();
+  const id = chuoi(tham.orderId, 'Đơn hàng', { max: 128 });
+  const ref = orders().doc(id);
+  await getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw khongTimThay('Đơn hàng');
+    const don = snap.data();
+    const kq = phanXuKhieuNai(don, tham, Date.now());
+    kq.ghi.disputeResolvedBy = nd.uid;
+    await apDung(tx, ref, don, kq);
   });
   return { id };
 }
 
 /**
- * Hủy các đơn của người gọi (là người mua hoặc shop) đã quá hạn shop xác nhận, trả lại tồn kho.
+ * Việc tới hạn trên các đơn của người gọi (là người mua hoặc shop): đơn quá hạn shop xác nhận thì hủy,
+ * hết hạn trả hàng thì hoàn tất, shop không trả lời yêu cầu trả hàng thì coi như đồng ý.
  * App gọi mỗi khi mở danh sách đơn, nên không cần job hẹn giờ.
  */
 export async function xuLyDonQuaHan(nd) {
   const now = Date.now();
-  const [mua, ban] = await Promise.all(['buyerId', 'shopId'].map((truong) => orders()
+  const lay = await Promise.all(['buyerId', 'shopId'].map((truong) => orders()
     .where(truong, '==', nd.uid)
-    .where('status', '==', 'pending_confirmation')
-    .limit(100)
+    .where('status', 'in', ['pending_confirmation', 'delivered', 'return_requested'])
+    .limit(200)
     .get()));
-  const qua = [...mua.docs, ...ban.docs].filter((d) => d.get('confirmDeadline')?.toMillis() <= now);
   let soDon = 0;
-  for (const doc of qua) {
+  for (const doc of lay.flatMap((q) => q.docs)) {
+    if (!viecToiHan(doc.data(), now)) continue;
     await getFirestore().runTransaction(async (tx) => {
       const snap = await tx.get(doc.ref);
-      const don = snap.data();
-      if (don?.status !== 'pending_confirmation' || don.confirmDeadline.toMillis() > now) return;
-      const ghiKho = await hoanKho(tx, don);
-      const kq = huyQuaHan(now);
-      ghiKho();
-      tx.update(doc.ref, { ...kq.ghi, lichSu: FieldValue.arrayUnion(kq.lichSuMoi), updatedAt: FieldValue.serverTimestamp() });
+      const kq = snap.exists ? viecToiHan(snap.data(), now) : null;
+      if (!kq) return;
+      await apDung(tx, doc.ref, snap.data(), kq);
       soDon++;
     });
   }
   return { soDon };
+}
+
+function viecToiHan(don, now) {
+  if (don.status === 'pending_confirmation') {
+    return don.confirmDeadline?.toMillis() <= now ? { ...huyQuaHan(now, don), hoanKho: true } : null;
+  }
+  return tuXuLyTraHang(don, now);
 }
 
 /**

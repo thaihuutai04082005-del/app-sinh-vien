@@ -48,6 +48,7 @@ class QuyenAdmin {
     this.quanAn = false,
     this.danhTinh = false,
     this.xe = false,
+    this.shop = false,
   });
 
   final bool tro;
@@ -59,10 +60,14 @@ class QuyenAdmin {
   /// Admin của module Xe dọn trọ (`admins/{uid}.xe`): duyệt hồ sơ tài xế.
   final bool xe;
 
+  /// Admin của module Shop đồ rẻ (`admins/{uid}.shop`): phân xử khiếu nại trả hàng.
+  final bool shop;
+
   factory QuyenAdmin.fromMap(Map<String, dynamic>? m) => QuyenAdmin(
     tro: m?['tro'] as bool? ?? false,
     quanAn: m?['quanAn'] as bool? ?? false,
     danhTinh: m?['danhTinh'] as bool? ?? false,
     xe: m?['xe'] as bool? ?? false,
+    shop: m?['shop'] as bool? ?? false,
   );
 }
