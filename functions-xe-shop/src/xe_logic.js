@@ -128,5 +128,7 @@ export function chuyenTrangThai(don, hanhDong, uid, tham, now) {
     ghi.cancelledBy = vaiTro;
     ghi.cancelReason = chuoi(tham.reason, 'Lý do hủy', { max: 300 });
   }
+  // Chuyến xong thì không giữ vị trí tài xế nữa (đang chuyển thì không hủy được).
+  if (quy.sang === 'done') ghi.driverLastLocation = null;
   return { ghi, lichSuMoi };
 }

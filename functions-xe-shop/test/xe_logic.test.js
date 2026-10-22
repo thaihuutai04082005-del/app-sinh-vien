@@ -119,3 +119,9 @@ test('bảng giá: cần ít nhất một mức giá, kiểm tra khoảng giá',
   assert.throws(() => bangGia({ priceTrip: 5000 }), (e) => /Giá theo chuyến/.test(e.message));
   assert.throws(() => bangGia({ priceHourly: 1.5 }), (e) => /Giá theo giờ/.test(e.message));
 });
+
+test('chuyến kết thúc thì xóa vị trí tài xế', () => {
+  const d = { userId: 'u', driverId: 'd', status: 'in_progress' };
+  assert.equal(chuyenTrangThai(d, 'hoanThanh', 'd', {}, Date.now()).ghi.driverLastLocation, null);
+  assert.equal('driverLastLocation' in chuyenTrangThai({ ...d, status: 'confirmed' }, 'batDau', 'd', {}, Date.now()).ghi, false);
+});

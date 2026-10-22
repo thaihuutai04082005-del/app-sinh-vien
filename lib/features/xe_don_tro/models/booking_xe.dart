@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../shared/services/callable_api.dart';
 
 /// Đơn đặt xe dọn trọ — collection `booking_xe` (mục 7.3). Chỉ server ghi.
@@ -23,6 +25,8 @@ class BookingXe {
     this.cancelReason,
     this.lichSu = const [],
     this.reviewed = false,
+    this.driverLastLocation,
+    this.driverLocationAt,
   });
 
   final String id;
@@ -62,6 +66,10 @@ class BookingXe {
   /// Sinh viên đã đánh giá chuyến này.
   final bool reviewed;
 
+  /// Vị trí tài xế gửi lên khi đang chuyển (mục 3.3: theo dõi realtime).
+  final ({double lat, double lng})? driverLastLocation;
+  final DateTime? driverLocationAt;
+
   static const statusLabels = {
     'pending': 'Chờ báo giá',
     'quoted': 'Đã báo giá',
@@ -98,6 +106,14 @@ class BookingXe {
     cancelReason: map['cancelReason'] as String?,
     lichSu: MocTrangThai.docDanhSach(map['lichSu']),
     reviewed: map['reviewed'] as bool? ?? false,
+    driverLastLocation: switch (map['driverLastLocation']) {
+      GeoPoint(:final latitude, :final longitude) => (
+        lat: latitude,
+        lng: longitude,
+      ),
+      _ => null,
+    },
+    driverLocationAt: docThoiGian(map['driverLocationAt']),
   );
 }
 

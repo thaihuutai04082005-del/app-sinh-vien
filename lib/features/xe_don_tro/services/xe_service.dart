@@ -29,6 +29,12 @@ abstract interface class XeService {
   Future<List<BookingXe>> donDuocGiao();
   Future<BookingXe> getBooking(String id);
 
+  /// Đơn cập nhật realtime (sinh viên xem vị trí tài xế).
+  Stream<BookingXe> theoDoiBooking(String id);
+
+  /// Tài xế gửi vị trí khi đơn đang chuyển (ghi thẳng, rules chỉ cho 2 trường vị trí).
+  Future<void> capNhatViTri(String bookingId, double lat, double lng);
+
   /// Gửi yêu cầu, trả về id đơn.
   Future<String> guiYeuCau(YeuCauXe yeuCau);
 
@@ -137,6 +143,17 @@ class FirebaseXeService implements XeService {
     if (!d.exists) throw StateError('Không tìm thấy đơn đặt xe.');
     return _fromDoc(d);
   }
+
+  @override
+  Stream<BookingXe> theoDoiBooking(String id) =>
+      _bookings.doc(id).snapshots().where((d) => d.exists).map(_fromDoc);
+
+  @override
+  Future<void> capNhatViTri(String bookingId, double lat, double lng) =>
+      _bookings.doc(bookingId).update({
+        'driverLastLocation': GeoPoint(lat, lng),
+        'driverLocationAt': FieldValue.serverTimestamp(),
+      });
 
   @override
   Future<String> guiYeuCau(YeuCauXe yeuCau) async {

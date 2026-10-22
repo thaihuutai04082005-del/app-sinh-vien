@@ -155,10 +155,19 @@ service cloud.firestore {
     }
 
     // Đơn đặt xe có địa chỉ nhà: chỉ người đặt và tài xế được giao đọc.
+    // Ngoại lệ duy nhất app được ghi: tài xế gửi vị trí (vài chục giây một lần) khi đang chuyển,
+    // để không phải gọi Cloud Function liên tục. Chỉ 2 trường vị trí, mốc thời gian là của server.
     match /booking_xe/{id} {
       allow read: if request.auth != null
         && (resource.data.userId == request.auth.uid || resource.data.driverId == request.auth.uid);
-      allow write: if false;
+      allow update: if signedIn()
+        && resource.data.driverId == request.auth.uid
+        && resource.data.status == 'in_progress'
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['driverLastLocation', 'driverLocationAt'])
+        && request.resource.data.driverLastLocation is latlng
+        && request.resource.data.driverLocationAt == request.time;
+      allow create, delete: if false;
     }
 
     // Hồ sơ người dùng: chỉ chính chủ đọc/ghi, và phải là tài khoản email (không phải ẩn danh).

@@ -2,11 +2,13 @@ import 'dart:typed_data';
 
 import 'package:app_sinh_vien/core/services/image_storage_service.dart';
 import 'package:app_sinh_vien/features/auth/models/xac_thuc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:app_sinh_vien/features/auth/services/xac_thuc_service.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/models/booking_xe.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/models/tai_xe.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/screens/booking_xe_detail_screen.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/screens/xe_don_tro_screen.dart';
+import 'package:app_sinh_vien/features/xe_don_tro/services/vi_tri.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/services/xe_dich_vu.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/services/xe_service.dart';
 import 'package:app_sinh_vien/shared/models/danh_gia.dart';
@@ -35,6 +37,7 @@ class _Kho {
   final bangLai = <String, List<String>>{};
   final danhGia = DanhGiaGia();
   final chat = KhoChat();
+  final viTriDaGui = <(double, double)>[];
 }
 
 class _FakeXe implements XeService {
@@ -129,6 +132,16 @@ class _FakeXe implements XeService {
       BookingXe.fromMap({...kho.don[id]!, 'id': id});
 
   @override
+  Stream<BookingXe> theoDoiBooking(String id) =>
+      Stream.value(BookingXe.fromMap({...kho.don[id]!, 'id': id}));
+
+  @override
+  Future<void> capNhatViTri(String bookingId, double lat, double lng) async {
+    kho.don[bookingId]!['driverLastLocation'] = GeoPoint(lat, lng);
+    kho.viTriDaGui.add((lat, lng));
+  }
+
+  @override
   Future<String> guiYeuCau(YeuCauXe yeuCau) async {
     final id = 'b${kho.don.length + 1}';
     kho.don[id] = {
@@ -179,15 +192,17 @@ class _FakeXe implements XeService {
   }
 }
 
-XeDichVu _dv(_Kho kho, String uid, {XacThucGia? xacThuc}) => XeDichVu(
-  uid: uid,
-  xe: _FakeXe(kho, uid),
-  storage: _Storage(),
-  xacThuc: xacThuc ?? XacThucGia.day(),
-  danhGia: kho.danhGia,
-  chat: ChatGia(kho.chat, uid),
-  pickImages: (_) async => [XFile.fromData(png, name: 'do.png')],
-);
+XeDichVu _dv(_Kho kho, String uid, {XacThucGia? xacThuc, ViTriStream? viTri}) =>
+    XeDichVu(
+      uid: uid,
+      xe: _FakeXe(kho, uid),
+      storage: _Storage(),
+      xacThuc: xacThuc ?? XacThucGia.day(),
+      danhGia: kho.danhGia,
+      chat: ChatGia(kho.chat, uid),
+      pickImages: (_) async => [XFile.fromData(png, name: 'do.png')],
+      viTri: viTri ?? () => const Stream.empty(),
+    );
 
 const _taiXeMau = TaiXe(
   driverId: 'tx',
@@ -418,6 +433,54 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Anh tới lúc mấy giờ?'), findsOneWidget);
     expect(kho.chat.cuoc.values.single.participantIds, ['sv', 'tx']);
+  });
+
+  testWidgets('đang chuyển: tài xế gửi vị trí, sinh viên thấy bản đồ', (
+    tester,
+  ) async {
+    final kho = _Kho()..taiXe.add(_taiXeMau);
+    kho.don['b1'] = {
+      'userId': 'sv',
+      'driverId': 'tx',
+      'fromAddress': 'A',
+      'toAddress': 'B',
+      'status': 'in_progress',
+      'itemPhotos': ['https://cdn.test/1.jpg'],
+    };
+    await _pump(
+      tester,
+      BookingXeDetailScreen(dv: _dv(kho, 'sv'), bookingId: 'b1'),
+    );
+    expect(find.text('Tài xế chưa chia sẻ vị trí'), findsOneWidget);
+
+    await _pump(
+      tester,
+      BookingXeDetailScreen(
+        dv: _dv(
+          kho,
+          'tx',
+          viTri: () => Stream.fromIterable([
+            (lat: 10.87, lng: 106.8),
+            (lat: 10.88, lng: 106.81),
+          ]),
+        ),
+        bookingId: 'b1',
+      ),
+    );
+    expect(find.text('Đang chia sẻ vị trí cho khách'), findsOneWidget);
+    // Hai lần liền nhau trong 15 giây chỉ gửi một lần.
+    expect(kho.viTriDaGui, [(10.87, 106.8)]);
+
+    await _pump(
+      tester,
+      BookingXeDetailScreen(
+        key: UniqueKey(),
+        dv: _dv(kho, 'sv'),
+        bookingId: 'b1',
+      ),
+    );
+    expect(find.text('Vị trí tài xế'), findsOneWidget);
+    expect(find.text('Tài xế chưa chia sẻ vị trí'), findsNothing);
   });
 
   testWidgets('hủy yêu cầu phải nhập lý do', (tester) async {

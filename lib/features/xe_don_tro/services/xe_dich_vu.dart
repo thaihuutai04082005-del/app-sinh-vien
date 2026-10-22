@@ -7,6 +7,7 @@ import '../../../shared/services/danh_gia_service.dart';
 import '../../../shared/widgets/image_upload_field.dart';
 import '../../../shared/widgets/video_upload_field.dart';
 import '../../auth/services/xac_thuc_service.dart';
+import 'vi_tri.dart';
 import 'xe_service.dart';
 
 /// Mọi thứ module Xe dọn trọ cần, gom lại để truyền cho các màn hình
@@ -21,6 +22,7 @@ class XeDichVu {
     required this.chat,
     this.pickImages,
     this.pickVideo,
+    this.viTri = viTriGeolocator,
   });
 
   final String uid;
@@ -37,6 +39,9 @@ class XeDichVu {
   final ChatService chat;
   final ImagePickerCallback? pickImages;
   final VideoPickerCallback? pickVideo;
+
+  /// Vị trí của máy, tài xế chia sẻ khi đang chuyển.
+  final ViTriStream viTri;
 
   factory XeDichVu.firebase() {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';

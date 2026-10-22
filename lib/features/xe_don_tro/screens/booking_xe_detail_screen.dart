@@ -12,6 +12,7 @@ import '../../../shared/widgets/video_player_view.dart';
 import '../models/booking_xe.dart';
 import '../models/tai_xe.dart';
 import '../services/xe_dich_vu.dart';
+import '../widgets/vi_tri_widgets.dart';
 import '../widgets/xe_widgets.dart';
 
 /// Chi tiết đơn đặt xe, kèm các nút theo vai: sinh viên chấp nhận báo giá / hủy;
@@ -218,6 +219,12 @@ class _BookingXeDetailScreenState extends State<BookingXeDetailScreen> {
                   'Lý do hủy (${BookingXe.nguoiLamLabels[b.cancelledBy] ?? ''})',
               value: b.cancelReason!,
             ),
+          if (b.status == 'in_progress') ...[
+            const SizedBox(height: 8),
+            laTaiXe
+                ? ChiaSeViTri(dv: widget.dv, bookingId: b.id)
+                : BanDoTaiXe(dv: widget.dv, bookingId: b.id),
+          ],
           const SizedBox(height: 8),
           ..._nutBam(b, laTaiXe),
           if (b.lichSu.isNotEmpty) ...[
