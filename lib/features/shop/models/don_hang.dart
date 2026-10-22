@@ -50,6 +50,7 @@ class DonHang {
     this.confirmDeadline,
     this.createdAt,
     this.lichSu = const [],
+    this.reviewed = false,
   });
 
   final String id;
@@ -79,6 +80,9 @@ class DonHang {
   final DateTime? confirmDeadline;
   final DateTime? createdAt;
   final List<MocTrangThai> lichSu;
+
+  /// Người mua đã đánh giá đơn này.
+  final bool reviewed;
 
   int get soLuong => items.fold(0, (s, i) => s + i.quantity);
 
@@ -125,6 +129,7 @@ class DonHang {
     confirmDeadline: docThoiGian(m['confirmDeadline']),
     createdAt: docThoiGian(m['createdAt']),
     lichSu: MocTrangThai.docDanhSach(m['lichSu']),
+    reviewed: m['reviewed'] as bool? ?? false,
   );
 }
 

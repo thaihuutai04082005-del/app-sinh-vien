@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/image_gallery.dart';
 import '../models/don_hang.dart';
 import '../models/gio_hang.dart';
@@ -65,12 +66,19 @@ class ProductCard extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    formatPrice(product.price),
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          formatPrice(product.price),
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      SaoTrungBinh(diem: product.diem, gon: true),
+                    ],
                   ),
                 ],
               ),

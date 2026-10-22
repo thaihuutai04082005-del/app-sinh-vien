@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../shared/models/danh_gia.dart';
 import '../../../shared/services/callable_api.dart';
 import '../models/don_hang.dart';
 import '../models/gio_hang.dart';
@@ -15,6 +16,9 @@ abstract interface class DonHangService {
 
   /// hanhDong: xacNhan | giaoHang | daGiao | daNhan | huy (cần [reason]).
   Future<void> thaoTac(String orderId, String hanhDong, {String? reason});
+
+  /// Người mua đánh giá đơn đã nhận (3 tiêu chí), mỗi đơn một lần.
+  Future<void> danhGia(String orderId, DanhGiaNhap danhGia);
 }
 
 class FirebaseDonHangService implements DonHangService {
@@ -72,6 +76,10 @@ class FirebaseDonHangService implements DonHangService {
         'hanhDong': hanhDong,
         'reason': ?reason,
       });
+
+  @override
+  Future<void> danhGia(String orderId, DanhGiaNhap danhGia) =>
+      _api.goi('danhGiaDon', {...danhGia.toMap(), 'orderId': orderId});
 
   static DonHang _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) =>
       DonHang.fromMap({...?doc.data(), 'id': doc.id});

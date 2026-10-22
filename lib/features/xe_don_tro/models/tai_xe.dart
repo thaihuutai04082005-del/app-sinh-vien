@@ -1,3 +1,5 @@
+import '../../../shared/models/danh_gia.dart';
+
 /// Hồ sơ tài xế — collection `xe_don_tro/{uid}` (mục 7.3). Chỉ server ghi,
 /// và chỉ tạo được sau khi tài xế đã xác thực danh tính.
 class TaiXe {
@@ -14,6 +16,7 @@ class TaiXe {
     this.vehiclePhotos = const [],
     this.approval = 'pending',
     this.rejectReason,
+    this.diem = DiemDanhGia.chuaCo,
   });
 
   final String driverId;
@@ -34,6 +37,9 @@ class TaiXe {
   /// pending | approved | rejected — admin Xe dọn trọ duyệt hồ sơ xe.
   final String approval;
   final String? rejectReason;
+
+  /// Điểm cộng dồn từ đánh giá sau chuyến.
+  final DiemDanhGia diem;
 
   static const loaiXeLabels = {
     'xe_tai_nho': 'Xe tải nhỏ',
@@ -66,6 +72,7 @@ class TaiXe {
         : const [],
     approval: map['approval'] as String? ?? 'pending',
     rejectReason: map['rejectReason'] as String?,
+    diem: DiemDanhGia.fromMap(map),
   );
 }
 

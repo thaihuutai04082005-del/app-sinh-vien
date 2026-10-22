@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../shared/models/danh_gia.dart';
+import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/image_gallery.dart';
 import '../../../shared/widgets/status_timeline.dart';
 import '../models/don_hang.dart';
@@ -49,6 +51,24 @@ class _DonHangDetailScreenState extends State<DonHangDetailScreen> {
     } finally {
       if (mounted) setState(() => _dangLam = false);
     }
+  }
+
+  Future<void> _danhGia() async {
+    final xong = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => VietDanhGiaScreen(
+          tieuDe: 'Đánh giá đơn hàng',
+          tieuChi: tieuChiShop,
+          storage: widget.dv.storage,
+          pickImages: widget.dv.pickImages,
+          gui: (dg) => widget.dv.donHang.danhGia(widget.orderId, dg),
+        ),
+      ),
+    );
+    if (xong != true || !mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Cảm ơn bạn đã đánh giá!')));
+    _reload();
   }
 
   Future<void> _huy() async {
@@ -219,6 +239,17 @@ class _DonHangDetailScreenState extends State<DonHangDetailScreen> {
         nut('Đã giao cho khách', 'daGiao', 'Đã báo giao hàng.'),
       if (!laShop && (d.status == 'shipping' || d.status == 'delivered'))
         nut('Đã nhận hàng đúng mô tả', 'daNhan', 'Cảm ơn bạn đã mua hàng!'),
+      if (!laShop && d.status == 'buyer_confirmed')
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: d.reviewed
+              ? const Text('Bạn đã đánh giá đơn này.')
+              : FilledButton.icon(
+                  onPressed: tat ? null : _danhGia,
+                  icon: const Icon(Icons.star_outline_rounded),
+                  label: const Text('Đánh giá đơn hàng'),
+                ),
+        ),
     ];
     final duocHuy = laShop
         ? ['pending_confirmation', 'to_ship'].contains(d.status)

@@ -38,3 +38,9 @@ export function motTrong(v, cacGiaTri, ten) {
   if (!cacGiaTri.includes(v)) throw thamSoSai(`${ten} không hợp lệ.`);
   return v;
 }
+
+/** Điểm sao nguyên 1–5. */
+export function diemSao(v, ten) {
+  if (!Number.isInteger(v) || v < 1 || v > 5) throw thamSoSai(`Chấm ${ten.toLowerCase()} từ 1 đến 5 sao.`);
+  return v;
+}

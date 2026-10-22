@@ -9,8 +9,10 @@ import 'package:app_sinh_vien/features/shop/models/product.dart';
 import 'package:app_sinh_vien/features/shop/services/don_hang_service.dart';
 import 'package:app_sinh_vien/features/shop/services/product_service.dart';
 import 'package:app_sinh_vien/features/shop/services/shop_dich_vu.dart';
+import 'package:app_sinh_vien/shared/models/danh_gia.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../fakes/danh_gia_gia.dart';
 import '../../fakes/xac_thuc_gia.dart';
 
 final png = base64Decode(
@@ -34,6 +36,8 @@ Future<List<XFile>> pickOne(int _) async => [
 class KhoGia {
   final products = <Product>[];
   final orders = <DonHang>[];
+  final danhGia = DanhGiaGia();
+  final diemShop = <String, DiemDanhGia>{};
   var _id = 0;
 
   String id(String tienTo) => '$tienTo${++_id}';
@@ -57,6 +61,10 @@ class FakeProductService implements ProductService {
   @override
   Future<Product> getSanPham(String id) async =>
       kho.products.firstWhere((p) => p.id == id);
+
+  @override
+  Future<DiemDanhGia> diemShop(String shopId) async =>
+      kho.diemShop[shopId] ?? DiemDanhGia.chuaCo;
 
   Product _tao(String id, SanPhamNhap sp) => Product.fromMap({
     ...sp.toMap(),
@@ -168,21 +176,55 @@ class FakeDonHangService implements DonHangService {
       'huy': 'cancelled',
     }[hanhDong];
     if (sang == null) throw const ApiException('Hành động không hợp lệ.');
+    _doi(
+      orderId,
+      (d) => DonHang(
+        id: d.id,
+        buyerId: d.buyerId,
+        shopId: d.shopId,
+        buyerName: d.buyerName,
+        shopName: d.shopName,
+        items: d.items,
+        totalPrice: d.totalPrice,
+        status: sang,
+        cancelReason: reason,
+        cancelledBy: hanhDong == 'huy'
+            ? (uid == d.shopId ? 'shop' : 'buyer')
+            : null,
+      ),
+    );
+  }
+
+  void _doi(String orderId, DonHang Function(DonHang) f) {
     final i = kho.orders.indexWhere((d) => d.id == orderId);
-    final d = kho.orders[i];
-    kho.orders[i] = DonHang(
-      id: d.id,
-      buyerId: d.buyerId,
-      shopId: d.shopId,
-      buyerName: d.buyerName,
-      shopName: d.shopName,
-      items: d.items,
-      totalPrice: d.totalPrice,
-      status: sang,
-      cancelReason: reason,
-      cancelledBy: hanhDong == 'huy'
-          ? (uid == d.shopId ? 'shop' : 'buyer')
-          : null,
+    kho.orders[i] = f(kho.orders[i]);
+  }
+
+  @override
+  Future<void> danhGia(String orderId, DanhGiaNhap danhGia) async {
+    final d = await getDon(orderId);
+    if (d.status != 'buyer_confirmed' || d.reviewed) {
+      throw const ApiException('Không đánh giá được đơn này.');
+    }
+    kho.danhGia.them(
+      'shop',
+      d.shopId,
+      danhGia,
+      productIds: [for (final m in d.items) m.productId],
+    );
+    _doi(
+      orderId,
+      (d) => DonHang(
+        id: d.id,
+        buyerId: d.buyerId,
+        shopId: d.shopId,
+        buyerName: d.buyerName,
+        shopName: d.shopName,
+        items: d.items,
+        totalPrice: d.totalPrice,
+        status: d.status,
+        reviewed: true,
+      ),
     );
   }
 }
@@ -199,6 +241,7 @@ ShopDichVu shopDv(
   gioHang: GioHang(uid: uid, luu: luu ?? BoNhoLuuGioHang()),
   storage: InstantStorage(),
   xacThuc: xacThuc ?? XacThucGia.day(),
+  danhGia: kho.danhGia,
   pickImages: pickOne,
 );
 

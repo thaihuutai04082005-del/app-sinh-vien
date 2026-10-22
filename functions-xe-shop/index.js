@@ -20,6 +20,7 @@ export const xeApi = onCall({ region: REGION }, async (request) => {
     case 'duyetTaiXe': return xe.duyetTaiXe(nd, tham);
     case 'guiYeuCau': return xe.guiYeuCau(nd, tham);
     case 'thaoTacDon': return xe.thaoTacDon(nd, tham);
+    case 'danhGiaChuyen': return xe.danhGiaChuyen(nd, tham);
     default: throw thamSoSai('Hành động không hợp lệ.');
   }
 });
@@ -34,6 +35,7 @@ export const shopApi = onCall({ region: REGION }, async (request) => {
     case 'datHang': return shop.datHang(nd, tham);
     case 'thaoTacDon': return shop.thaoTacDon(nd, tham);
     case 'xuLyDonQuaHan': return shop.xuLyDonQuaHan(nd);
+    case 'danhGiaDon': return shop.danhGiaDon(nd, tham);
     default: throw thamSoSai('Hành động không hợp lệ.');
   }
 });

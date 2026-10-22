@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../shared/models/danh_gia.dart';
+import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/detail_layout.dart';
 import '../../../shared/widgets/image_gallery.dart';
 import '../../../shared/widgets/video_player_view.dart';
@@ -194,6 +196,8 @@ class _SanPhamDetailScreenState extends State<SanPhamDetailScreen> {
               fontWeight: FontWeight.w800,
             ),
           ),
+          const SizedBox(height: 4),
+          SaoTrungBinh(diem: product.diem),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -312,6 +316,12 @@ class _SanPhamDetailScreenState extends State<SanPhamDetailScreen> {
             ),
           ] else
             const Text('Sản phẩm đã hết hàng.'),
+          const SizedBox(height: 24),
+          DanhGiaSection(
+            taiDanhGia: () => widget.dv.danhGia.theoSanPham(product.id),
+            diem: product.diem,
+            tieuChi: tieuChiShop,
+          ),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/image_gallery.dart';
 import '../models/booking_xe.dart';
 import '../models/tai_xe.dart';
@@ -180,6 +181,8 @@ class TaiXeCard extends StatelessWidget {
                               ),
                             ),
                           ),
+                          const SizedBox(width: 6),
+                          SaoTrungBinh(diem: taiXe.diem, gon: true),
                           if (taiXe.driverVerified) ...[
                             const SizedBox(width: 4),
                             Tooltip(

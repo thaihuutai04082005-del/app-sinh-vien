@@ -22,6 +22,7 @@ class BookingXe {
     this.cancelledBy,
     this.cancelReason,
     this.lichSu = const [],
+    this.reviewed = false,
   });
 
   final String id;
@@ -58,6 +59,9 @@ class BookingXe {
   final String? cancelReason;
   final List<MocTrangThai> lichSu;
 
+  /// Sinh viên đã đánh giá chuyến này.
+  final bool reviewed;
+
   static const statusLabels = {
     'pending': 'Chờ báo giá',
     'quoted': 'Đã báo giá',
@@ -93,6 +97,7 @@ class BookingXe {
     cancelledBy: map['cancelledBy'] as String?,
     cancelReason: map['cancelReason'] as String?,
     lichSu: MocTrangThai.docDanhSach(map['lichSu']),
+    reviewed: map['reviewed'] as bool? ?? false,
   );
 }
 

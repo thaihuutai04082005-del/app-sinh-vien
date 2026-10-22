@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../shared/models/danh_gia.dart';
 import '../../../shared/services/callable_api.dart';
 import '../models/product.dart';
 
@@ -9,6 +10,9 @@ abstract interface class ProductService {
   Future<List<Product>> getDanhSachSanPham();
   Future<List<Product>> getSanPhamCuaShop(String shopId);
   Future<Product> getSanPham(String id);
+
+  /// Điểm đánh giá cộng dồn của shop (`shop_stats/{shopId}`).
+  Future<DiemDanhGia> diemShop(String shopId);
 
   /// Trả về id sản phẩm mới.
   Future<String> dangSanPham(SanPhamNhap sp);
@@ -50,6 +54,15 @@ class FirebaseProductService implements ProductService {
     final doc = await _products.doc(id).get();
     if (!doc.exists) throw StateError('Sản phẩm không còn tồn tại.');
     return _fromDoc(doc);
+  }
+
+  @override
+  Future<DiemDanhGia> diemShop(String shopId) async {
+    final d = await (_db ?? FirebaseFirestore.instance)
+        .collection(Collections.shopStats)
+        .doc(shopId)
+        .get();
+    return DiemDanhGia.fromMap(d.data());
   }
 
   @override

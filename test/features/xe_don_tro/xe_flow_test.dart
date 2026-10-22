@@ -9,10 +9,12 @@ import 'package:app_sinh_vien/features/xe_don_tro/screens/booking_xe_detail_scre
 import 'package:app_sinh_vien/features/xe_don_tro/screens/xe_don_tro_screen.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/services/xe_dich_vu.dart';
 import 'package:app_sinh_vien/features/xe_don_tro/services/xe_service.dart';
+import 'package:app_sinh_vien/shared/models/danh_gia.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../fakes/danh_gia_gia.dart';
 import '../../fakes/xac_thuc_gia.dart';
 import '../shop/fakes.dart' show png;
 
@@ -30,6 +32,7 @@ class _Kho {
   final taiXe = <TaiXe>[];
   final don = <String, Map<String, dynamic>>{};
   final bangLai = <String, List<String>>{};
+  final danhGia = DanhGiaGia();
 }
 
 class _FakeXe implements XeService {
@@ -148,12 +151,26 @@ class _FakeXe implements XeService {
       case 'chapNhan':
         d['status'] = 'confirmed';
         d['driverPhone'] = '0900000000';
+      case 'batDau':
+        d['status'] = 'in_progress';
+      case 'hoanThanh':
+        d['status'] = 'done';
       case 'huy':
         d['status'] = 'cancelled';
         d['cancelReason'] = reason;
       default:
         throw const ApiException('Không hỗ trợ trong test');
     }
+  }
+
+  @override
+  Future<void> danhGia(String bookingId, DanhGiaNhap danhGia) async {
+    final d = kho.don[bookingId]!;
+    if (d['status'] != 'done' || d['reviewed'] == true) {
+      throw const ApiException('Không đánh giá được chuyến này.');
+    }
+    kho.danhGia.them('xe_don_tro', d['driverId'] as String, danhGia);
+    d['reviewed'] = true;
   }
 }
 
@@ -162,6 +179,7 @@ XeDichVu _dv(_Kho kho, String uid, {XacThucGia? xacThuc}) => XeDichVu(
   xe: _FakeXe(kho, uid),
   storage: _Storage(),
   xacThuc: xacThuc ?? XacThucGia.day(),
+  danhGia: kho.danhGia,
   pickImages: (_) async => [XFile.fromData(png, name: 'do.png')],
 );
 
@@ -302,6 +320,52 @@ void main() {
     await tester.pumpAndSettle();
     expect(kho.don[id]!['status'], 'confirmed');
     expect(find.textContaining('0900000000'), findsOneWidget);
+  });
+
+  testWidgets('chuyến hoàn thành thì sinh viên đánh giá tài xế một lần', (
+    tester,
+  ) async {
+    final kho = _Kho()..taiXe.add(_taiXeMau);
+    kho.don['b1'] = {
+      'userId': 'sv',
+      'driverId': 'tx',
+      'fromAddress': 'A',
+      'toAddress': 'B',
+      'status': 'in_progress',
+      'quotedPrice': 300000,
+      'itemPhotos': ['https://cdn.test/1.jpg'],
+    };
+    await _pump(
+      tester,
+      BookingXeDetailScreen(dv: _dv(kho, 'sv'), bookingId: 'b1'),
+    );
+    expect(find.text('Đánh giá tài xế'), findsNothing);
+
+    await _pump(
+      tester,
+      BookingXeDetailScreen(dv: _dv(kho, 'tx'), bookingId: 'b1'),
+    );
+    await tester.tap(find.text('Hoàn thành'));
+    await tester.pumpAndSettle();
+    // Tài xế không tự đánh giá mình.
+    expect(find.text('Đánh giá tài xế'), findsNothing);
+
+    await _pump(
+      tester,
+      BookingXeDetailScreen(dv: _dv(kho, 'sv'), bookingId: 'b1'),
+    );
+    await tester.tap(find.text('Đánh giá tài xế'));
+    await tester.pumpAndSettle();
+    expect(find.text('Giá đúng như báo'), findsOneWidget);
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.byTooltip('5 sao').at(i));
+    }
+    await tester.tap(find.text('Gửi đánh giá'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bạn đã đánh giá chuyến này.'), findsOneWidget);
+    expect(kho.don['b1']!['reviewed'], true);
+    expect(await kho.danhGia.theoDoiTuong('xe_don_tro', 'tx'), hasLength(1));
   });
 
   testWidgets('hủy yêu cầu phải nhập lý do', (tester) async {

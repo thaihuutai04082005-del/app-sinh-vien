@@ -31,6 +31,7 @@ class Collections {
   static const String follows = 'follows';
   static const String vuiChoi = 'vui_choi';
   static const String reviews = 'reviews';
+  static const String shopStats = 'shop_stats';
   static const String checkins = 'checkins';
   static const String chats = 'chats';
   static const String messages = 'messages';

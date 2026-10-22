@@ -1,7 +1,9 @@
-// Firestore của Shop đồ rẻ: sản phẩm `products`, đơn hàng `orders`.
+// Firestore của Shop đồ rẻ: sản phẩm `products`, đơn hàng `orders`, đánh giá `reviews`,
+// điểm của shop `shop_stats/{shopId}`.
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { khongCoQuyen, khongTimThay, loi } from './loi.js';
 import { chuoi } from './kiem_tra.js';
+import { TIEU_CHI_SHOP, noiDungDanhGia } from './danh_gia.js';
 import { tangLuotDang } from './tai_khoan.js';
 import {
   HAN_XAC_NHAN_MS, chuyenTrangThaiDon, gioHang, huyQuaHan, nhanHang, sanPham, tachDon, trangThaiKho,
@@ -9,6 +11,8 @@ import {
 
 const products = () => getFirestore().collection('products');
 const orders = () => getFirestore().collection('orders');
+const reviews = () => getFirestore().collection('reviews');
+const shopStats = (shopId) => getFirestore().collection('shop_stats').doc(shopId);
 const DON_CHO_TOI_DA = 10;
 
 export async function dangSanPham(nd, tham) {
@@ -91,6 +95,7 @@ export async function datHang(nd, tham) {
         discountAmount: 0,
         offerPrice: null,
         fundsReleased: false,
+        reviewed: false,
         status: 'pending_confirmation',
         cancelledBy: null,
         cancelReason: null,
@@ -160,4 +165,40 @@ export async function xuLyDonQuaHan(nd) {
     });
   }
   return { soDon };
+}
+
+/**
+ * Người mua đánh giá đơn đã nhận (3 tiêu chí, mục 3.4), mỗi đơn một lần. Điểm cộng vào shop
+ * và từng sản phẩm trong đơn (sản phẩm đã xóa thì bỏ qua).
+ */
+export async function danhGiaDon(nd, tham) {
+  const id = chuoi(tham.orderId, 'Đơn hàng', { max: 128 });
+  const dg = noiDungDanhGia(tham, TIEU_CHI_SHOP);
+  const ref = orders().doc(id);
+  await getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw khongTimThay('Đơn hàng');
+    const don = snap.data();
+    if (don.buyerId !== nd.uid) throw khongCoQuyen();
+    if (don.status !== 'buyer_confirmed') throw loi('Xác nhận đã nhận hàng rồi mới đánh giá được.');
+    if (don.reviewed) throw loi('Bạn đã đánh giá đơn này rồi.');
+    const productIds = [...new Set((don.items ?? []).map((i) => i.productId))];
+    const sps = productIds.length ? await tx.getAll(...productIds.map((p) => products().doc(p))) : [];
+
+    const cong = { ratingSum: FieldValue.increment(dg.rating), ratingCount: FieldValue.increment(1) };
+    tx.create(reviews().doc(`order_${id}`), {
+      ...dg,
+      targetType: 'shop',
+      targetId: don.shopId,
+      productIds,
+      orderId: id,
+      userId: nd.uid,
+      userName: nd.ten,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    tx.update(ref, { reviewed: true, updatedAt: FieldValue.serverTimestamp() });
+    tx.set(shopStats(don.shopId), cong, { merge: true });
+    for (const s of sps) if (s.exists) tx.update(s.ref, cong);
+  });
+  return { id: `order_${id}` };
 }

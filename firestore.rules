@@ -94,6 +94,18 @@ service cloud.firestore {
       }
     }
 
+    // Đánh giá Shop / Xe dọn trọ (chỉ người đã mua / đã đặt chuyến, qua hệ thống): công khai.
+    match /reviews/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Điểm đánh giá cộng dồn của shop: công khai.
+    match /shop_stats/{shopId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Đơn đặt xe có địa chỉ nhà: chỉ người đặt và tài xế được giao đọc.
     match /booking_xe/{id} {
       allow read: if request.auth != null

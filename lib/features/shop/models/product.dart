@@ -1,3 +1,5 @@
+import '../../../shared/models/danh_gia.dart';
+
 /// Sản phẩm của shop quần áo — collection `products` (mục 7.3). Chỉ server ghi.
 class Product {
   const Product({
@@ -13,6 +15,7 @@ class Product {
     this.videos = const [],
     this.description = '',
     this.shopName = '',
+    this.diem = DiemDanhGia.chuaCo,
   });
 
   final String id;
@@ -34,6 +37,9 @@ class Product {
   final String description;
   final String shopName;
 
+  /// Điểm cộng dồn từ đánh giá các đơn có sản phẩm này.
+  final DiemDanhGia diem;
+
   bool get conHang => status != 'out_of_stock' && stock > 0;
 
   factory Product.fromMap(Map<String, dynamic> map) => Product(
@@ -49,6 +55,7 @@ class Product {
     videos: _strings(map['videos']),
     description: map['description'] as String? ?? '',
     shopName: map['shopName'] as String? ?? '',
+    diem: DiemDanhGia.fromMap(map),
   );
 }
 

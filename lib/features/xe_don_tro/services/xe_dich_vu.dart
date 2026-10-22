@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/services/image_storage_service.dart';
+import '../../../shared/services/danh_gia_service.dart';
 import '../../../shared/widgets/image_upload_field.dart';
 import '../../../shared/widgets/video_upload_field.dart';
 import '../../auth/services/xac_thuc_service.dart';
@@ -14,6 +15,7 @@ class XeDichVu {
     required this.xe,
     required this.storage,
     required this.xacThuc,
+    required this.danhGia,
     this.pickImages,
     this.pickVideo,
   });
@@ -24,6 +26,9 @@ class XeDichVu {
 
   /// OTP, danh tính, quyền admin (dùng chung toàn app).
   final XacThucService xacThuc;
+
+  /// Đọc đánh giá tài xế (viết đánh giá qua [xe]).
+  final DanhGiaService danhGia;
   final ImagePickerCallback? pickImages;
   final VideoPickerCallback? pickVideo;
 
@@ -34,6 +39,7 @@ class XeDichVu {
       xe: FirebaseXeService(uid: uid),
       storage: FirebaseImageStorageService(),
       xacThuc: FirebaseXacThucService(),
+      danhGia: FirebaseDanhGiaService(),
     );
   }
 }

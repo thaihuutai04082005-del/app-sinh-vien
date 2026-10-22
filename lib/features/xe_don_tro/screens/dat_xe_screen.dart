@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/models/danh_gia.dart';
+import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/image_source_field.dart';
 import '../../../shared/widgets/video_upload_field.dart';
 import '../models/booking_xe.dart';
@@ -105,6 +107,21 @@ class _DatXeScreenState extends State<DatXeScreen> {
           padding: const EdgeInsets.all(20),
           children: [
             TaiXeCard(taiXe: widget.taiXe),
+            if (widget.taiXe.diem.soLuot > 0)
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: const Text('Xem đánh giá tài xế'),
+                children: [
+                  DanhGiaSection(
+                    taiDanhGia: () => widget.dv.danhGia.theoDoiTuong(
+                      'xe_don_tro',
+                      widget.taiXe.driverId,
+                    ),
+                    diem: widget.taiXe.diem,
+                    tieuChi: tieuChiXe,
+                  ),
+                ],
+              ),
             const SizedBox(height: 18),
             TextFormField(
               controller: _fromController,

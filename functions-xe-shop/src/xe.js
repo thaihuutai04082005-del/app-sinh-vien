@@ -1,7 +1,8 @@
-// Firestore của Xe dọn trọ: hồ sơ tài xế `xe_don_tro/{uid}`, đơn `booking_xe`.
+// Firestore của Xe dọn trọ: hồ sơ tài xế `xe_don_tro/{uid}`, đơn `booking_xe`, đánh giá `reviews`.
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { khongCoQuyen, khongTimThay, loi, thamSoSai } from './loi.js';
 import { chuoi } from './kiem_tra.js';
+import { TIEU_CHI_XE, noiDungDanhGia } from './danh_gia.js';
 import { tangLuotDang } from './tai_khoan.js';
 import {
   YEU_CAU_CHO_TOI_DA, chuyenTrangThai, hoSoTaiXe, ketQuaDuyet, trangThaiDuyetSauKhiLuu, yeuCauMoi,
@@ -94,6 +95,7 @@ export async function guiYeuCau(nd, tham) {
       vehicleType: tx1.get('vehicleType') ?? '',
       driverPhone: null,
       quotedPrice: null,
+      reviewed: false,
       status: 'pending',
       cancelledBy: null,
       cancelReason: null,
@@ -121,4 +123,35 @@ export async function thaoTacDon(nd, tham) {
     tx.update(ref, { ...ghi, lichSu: FieldValue.arrayUnion(lichSuMoi), updatedAt: FieldValue.serverTimestamp() });
   });
   return { id };
+}
+
+/** Sinh viên đánh giá tài xế sau chuyến đã hoàn thành (thái độ, đúng giờ, giá đúng như báo), mỗi đơn một lần. */
+export async function danhGiaChuyen(nd, tham) {
+  const id = chuoi(tham.bookingId, 'Đơn', { max: 128 });
+  const dg = noiDungDanhGia(tham, TIEU_CHI_XE);
+  const ref = bookings().doc(id);
+  await getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw khongTimThay('Đơn đặt xe');
+    const don = snap.data();
+    if (don.userId !== nd.uid) throw khongCoQuyen();
+    if (don.status !== 'done') throw loi('Chuyến hoàn thành rồi mới đánh giá được.');
+    if (don.reviewed) throw loi('Bạn đã đánh giá chuyến này rồi.');
+    const tx1 = await tx.get(taiXe(don.driverId));
+
+    tx.create(getFirestore().collection('reviews').doc(`booking_${id}`), {
+      ...dg,
+      targetType: 'xe_don_tro',
+      targetId: don.driverId,
+      bookingId: id,
+      userId: nd.uid,
+      userName: nd.ten,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    tx.update(ref, { reviewed: true, updatedAt: FieldValue.serverTimestamp() });
+    if (tx1.exists) {
+      tx.update(tx1.ref, { ratingSum: FieldValue.increment(dg.rating), ratingCount: FieldValue.increment(1) });
+    }
+  });
+  return { id: `booking_${id}` };
 }

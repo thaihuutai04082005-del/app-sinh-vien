@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../shared/models/danh_gia.dart';
+import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../../../shared/widgets/detail_layout.dart';
 import '../../../shared/widgets/image_gallery.dart';
 import '../../../shared/widgets/status_timeline.dart';
@@ -65,6 +67,24 @@ class _BookingXeDetailScreenState extends State<BookingXeDetailScreen> {
     final gia = await _hoiGia(context, b.quotedPrice);
     if (gia == null) return;
     await _lam('baoGia', price: gia, thongBao: 'Đã gửi báo giá cho khách.');
+  }
+
+  Future<void> _danhGia() async {
+    final xong = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => VietDanhGiaScreen(
+          tieuDe: 'Đánh giá tài xế',
+          tieuChi: tieuChiXe,
+          storage: widget.dv.storage,
+          pickImages: widget.dv.pickImages,
+          gui: (dg) => widget.dv.xe.danhGia(widget.bookingId, dg),
+        ),
+      ),
+    );
+    if (xong != true || !mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Cảm ơn bạn đã đánh giá!')));
+    _reload();
   }
 
   Future<void> _huy({required bool laTaiXe}) async {
@@ -257,6 +277,17 @@ class _BookingXeDetailScreenState extends State<BookingXeDetailScreen> {
           icon: const Icon(Icons.handshake_outlined),
           label: Text('Chấp nhận giá ${formatPrice(b.quotedPrice ?? 0)}'),
         ),
+      );
+    }
+    if (!laTaiXe && b.status == 'done') {
+      them(
+        b.reviewed
+            ? const Text('Bạn đã đánh giá chuyến này.')
+            : FilledButton.icon(
+                onPressed: tat ? null : _danhGia,
+                icon: const Icon(Icons.star_outline_rounded),
+                label: const Text('Đánh giá tài xế'),
+              ),
       );
     }
     if (['pending', 'quoted', 'confirmed'].contains(b.status)) {

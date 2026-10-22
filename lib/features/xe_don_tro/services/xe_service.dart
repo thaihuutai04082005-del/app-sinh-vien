@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../shared/models/danh_gia.dart';
 import '../../../shared/services/callable_api.dart';
 import '../models/booking_xe.dart';
 import '../models/tai_xe.dart';
@@ -38,6 +39,9 @@ abstract interface class XeService {
     int? price,
     String? reason,
   });
+
+  /// Sinh viên đánh giá tài xế sau chuyến hoàn thành, mỗi đơn một lần.
+  Future<void> danhGia(String bookingId, DanhGiaNhap danhGia);
 }
 
 class FirebaseXeService implements XeService {
@@ -152,6 +156,10 @@ class FirebaseXeService implements XeService {
     'price': ?price,
     'reason': ?reason,
   });
+
+  @override
+  Future<void> danhGia(String bookingId, DanhGiaNhap danhGia) =>
+      _api.goi('danhGiaChuyen', {...danhGia.toMap(), 'bookingId': bookingId});
 
   static BookingXe _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) =>
       BookingXe.fromMap({...?doc.data(), 'id': doc.id});

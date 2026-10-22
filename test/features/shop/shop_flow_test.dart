@@ -1,6 +1,7 @@
 import 'package:app_sinh_vien/features/shop/models/don_hang.dart';
 import 'package:app_sinh_vien/features/shop/models/gio_hang.dart';
 import 'package:app_sinh_vien/features/shop/screens/don_hang_detail_screen.dart';
+import 'package:app_sinh_vien/features/shop/screens/san_pham_detail_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/shop_screen.dart';
 import 'package:app_sinh_vien/features/shop/services/shop_dich_vu.dart';
 import 'package:flutter/material.dart';
@@ -200,6 +201,69 @@ void main() {
     expect(kho.orders.single.status, 'to_ship');
     expect(find.text('Bắt đầu giao hàng'), findsOneWidget);
   });
+
+  testWidgets(
+    'nhận hàng xong thì đánh giá 3 tiêu chí, hiện trên trang sản phẩm',
+    (tester) async {
+      final kho = KhoGia();
+      final mua = shopDv(kho, 'mua');
+      kho.products.add(sanPhamMau(id: 'a', sizes: const []));
+      await mua.donHang.datHang(
+        [DongGio.tu(kho.products.single, size: '', quantity: 1)],
+        const ThongTinNhan(
+          receiverName: 'An',
+          phone: '0912345678',
+          deliveryMethod: 'hen_lay',
+        ),
+      );
+      final id = kho.orders.single.id;
+
+      // Chưa nhận hàng thì chưa có nút đánh giá.
+      await _pump(tester, DonHangDetailScreen(dv: mua, orderId: id));
+      expect(find.text('Đánh giá đơn hàng'), findsNothing);
+
+      await mua.donHang.thaoTac(id, 'daNhan');
+      await _pump(
+        tester,
+        DonHangDetailScreen(key: UniqueKey(), dv: mua, orderId: id),
+      );
+      await tester.tap(find.text('Đánh giá đơn hàng'));
+      await tester.pumpAndSettle();
+
+      // Thiếu tiêu chí thì chưa gửi.
+      await tester.tap(find.byTooltip('5 sao').first);
+      await tester.pump();
+      await tester.tap(find.text('Gửi đánh giá'));
+      await tester.pump();
+      expect(find.text('Chấm sao đủ 3 tiêu chí.'), findsOneWidget);
+      expect(kho.danhGia.ds, isEmpty);
+
+      await tester.tap(find.byTooltip('4 sao').at(1));
+      await tester.tap(find.byTooltip('4 sao').at(2));
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Nhận xét (không bắt buộc)'),
+        'Áo đẹp, đúng hình',
+      );
+      await tester.tap(find.text('Gửi đánh giá'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bạn đã đánh giá đơn này.'), findsOneWidget);
+      expect(find.text('Đánh giá đơn hàng'), findsNothing);
+      final dg = kho.danhGia.ds.single;
+      expect(dg.$4.ratingDetail, {'quality': 5, 'accuracy': 4, 'service': 4});
+      expect(dg.$3, ['a']);
+
+      await _pump(tester, SanPhamDetailScreen(dv: mua, productId: 'a'));
+      expect(
+        find.text('Áo đẹp, đúng hình', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Chất lượng sản phẩm: 5★', skipOffstage: false),
+        findsOneWidget,
+      );
+    },
+  );
 
   test(
     'giỏ hàng lưu lại theo tài khoản và kẹp số lượng theo tồn kho',
