@@ -4,7 +4,9 @@ import 'package:app_sinh_vien/features/shop/models/gio_hang.dart';
 import 'package:app_sinh_vien/features/shop/screens/dat_hang_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/don_hang_detail_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/san_pham_detail_screen.dart';
+import 'package:app_sinh_vien/features/shop/screens/kenh_nguoi_ban_screen.dart';
 import 'package:app_sinh_vien/features/shop/screens/shop_screen.dart';
+import 'package:app_sinh_vien/features/shop/screens/tra_gia_screen.dart';
 import 'package:app_sinh_vien/features/shop/services/shop_dich_vu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -398,6 +400,127 @@ void main() {
   testWidgets('người thường không thấy nút phân xử trả hàng', (tester) async {
     await _pumpShop(tester, shopDv(KhoGia(), 'mua'));
     expect(find.byTooltip('Phân xử trả hàng'), findsNothing);
+  });
+
+  Future<void> nhapNhanHang(WidgetTester tester) async {
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Tên người nhận'),
+      'An',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Số điện thoại'),
+      '0912345678',
+    );
+    await tester.tap(find.text('Hẹn lấy trực tiếp'));
+    await tester.pump();
+  }
+
+  testWidgets('trả giá: shop đồng ý thì người mua mua được theo giá đã trả', (
+    tester,
+  ) async {
+    final kho = KhoGia()
+      ..products.add(sanPhamMau(id: 'a', sizes: const [], price: 100000));
+    final mua = shopDv(kho, 'mua');
+
+    await _pump(tester, SanPhamDetailScreen(dv: mua, productId: 'a'));
+    await tester.tap(find.text('Trả giá với shop'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Giá bạn muốn trả'),
+      '40000',
+    );
+    await tester.tap(find.text('Gửi trả giá'));
+    await tester.pump();
+    expect(find.text('Giá chưa hợp lệ'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Giá bạn muốn trả'),
+      '70000',
+    );
+    await tester.tap(find.text('Gửi trả giá'));
+    await tester.pumpAndSettle();
+    expect(kho.traGia.single.offerPrice, 70000);
+
+    // Shop đồng ý trong kênh người bán.
+    await _pump(tester, KenhNguoiBanScreen(dv: shopDv(kho, 'ban')));
+    await tester.tap(find.byTooltip('Khách trả giá'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('70.000đ', findRichText: true),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Đồng ý'));
+    await tester.pumpAndSettle();
+    expect(kho.traGia.single.status, 'accepted');
+
+    await tester.pumpWidget(const SizedBox());
+    await _pump(tester, TraGiaScreen(dv: mua, laNguoiBan: false));
+    await tester.tap(find.text('Mua với giá 70.000đ'));
+    await tester.pumpAndSettle();
+    await nhapNhanHang(tester);
+    await tester.tap(find.text('Đặt hàng · 70.000đ'));
+    await tester.pumpAndSettle();
+    expect(kho.orders.single.totalPrice, 70000);
+  });
+
+  testWidgets('voucher: shop tạo mã, người mua áp mã thì đơn được giảm', (
+    tester,
+  ) async {
+    final kho = KhoGia()
+      ..products.add(sanPhamMau(id: 'a', sizes: const [], price: 200000));
+    await _pump(tester, KenhNguoiBanScreen(dv: shopDv(kho, 'ban')));
+    await tester.tap(find.byTooltip('Voucher'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tạo voucher'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Mã voucher'),
+      'giam10',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Phần trăm giảm'),
+      '10',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Giảm tối đa (không bắt buộc)'),
+      '15000',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Tạo voucher'));
+    await tester.pumpAndSettle();
+    expect(find.text('GIAM10'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    final mua = shopDv(kho, 'mua');
+    await _pump(
+      tester,
+      DatHangScreen(
+        dv: mua,
+        dong: [DongGio.tu(kho.products.single, size: '', quantity: 1)],
+      ),
+    );
+    await nhapNhanHang(tester);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Mã voucher của shop'),
+      'KHONGCO',
+    );
+    await tester.tap(find.text('Áp dụng'));
+    await tester.pumpAndSettle();
+    expect(find.text('Mã voucher không tồn tại.'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Mã voucher của shop'),
+      'giam10',
+    );
+    await tester.tap(find.text('Áp dụng'));
+    await tester.pumpAndSettle();
+    // 10% của 200k là 20k, trần 15k.
+    expect(find.text('GIAM10 · -15.000đ'), findsOneWidget);
+    await tester.tap(find.text('Đặt hàng · 185.000đ'));
+    await tester.pumpAndSettle();
+    final d = kho.orders.single;
+    expect(
+      [d.voucherCode, d.discountAmount, d.totalPrice],
+      ['GIAM10', 15000, 185000],
+    );
   });
 
   test(

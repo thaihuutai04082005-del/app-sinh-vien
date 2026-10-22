@@ -228,11 +228,27 @@ class _DonHangDetailScreenState extends State<DonHangDetailScreen> {
                       [
                         if (m.size.isNotEmpty) 'Size ${m.size}',
                         '${formatPrice(m.price)} x${m.quantity}',
+                        if (m.listPrice != null)
+                          'giá đã trả (niêm yết ${formatPrice(m.listPrice!)})',
                       ].join(' · '),
                     ),
                     trailing: Text(formatPrice(m.price * m.quantity)),
                   ),
                 const Divider(),
+                if (d.discountAmount > 0) ...[
+                  Row(
+                    children: [
+                      const Expanded(child: Text('Tạm tính')),
+                      Text(formatPrice(d.subtotal ?? d.totalPrice)),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(child: Text('Voucher ${d.voucherCode ?? ''}')),
+                      Text('-${formatPrice(d.discountAmount)}'),
+                    ],
+                  ),
+                ],
                 Row(
                   children: [
                     Expanded(

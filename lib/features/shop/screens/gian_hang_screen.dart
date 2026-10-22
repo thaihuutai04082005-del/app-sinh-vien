@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/formatters.dart';
 import '../../../shared/models/danh_gia.dart';
 import '../../../shared/widgets/async_list_view.dart';
 import '../../../shared/widgets/danh_gia_widgets.dart';
 import '../models/product.dart';
+import '../models/uu_dai.dart';
 import '../services/shop_dich_vu.dart';
 import '../widgets/shop_widgets.dart';
 import 'san_pham_detail_screen.dart';
@@ -29,6 +31,16 @@ class _GianHangScreenState extends State<GianHangScreen> {
   late Future<List<Product>> _sp = widget.dv.products.getSanPhamCuaShop(
     widget.shopId,
   );
+
+  late final Future<List<Voucher>> _voucher = widget.dv.uuDai
+      .voucherCuaShop(widget.shopId)
+      .then(
+        (ds) => [
+          for (final v in ds)
+            if (v.conDung) v,
+        ],
+      )
+      .catchError((_) => <Voucher>[]);
 
   late final Future<DiemDanhGia> _diem = widget.dv.products.diemShop(
     widget.shopId,
@@ -80,6 +92,33 @@ class _GianHangScreenState extends State<GianHangScreen> {
                         onPressed: () => _xemDanhGia(diem),
                         child: const Text('Xem đánh giá'),
                       ),
+              );
+            },
+          ),
+          FutureBuilder<List<Voucher>>(
+            future: _voucher,
+            builder: (context, snap) {
+              final ds = snap.data ?? const <Voucher>[];
+              if (ds.isEmpty) return const SizedBox.shrink();
+              return SizedBox(
+                height: 48,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    for (final v in ds)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Chip(
+                          avatar: const Icon(
+                            Icons.confirmation_number_outlined,
+                            size: 18,
+                          ),
+                          label: Text('${v.code} · ${v.moTa(formatGiaGon)}'),
+                        ),
+                      ),
+                  ],
+                ),
               );
             },
           ),

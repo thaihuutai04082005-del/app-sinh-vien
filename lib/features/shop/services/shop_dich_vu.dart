@@ -8,6 +8,7 @@ import '../../auth/services/xac_thuc_service.dart';
 import '../models/gio_hang.dart';
 import 'don_hang_service.dart';
 import 'product_service.dart';
+import 'uu_dai_service.dart';
 
 /// Mọi thứ module Shop đồ rẻ cần, gom lại để truyền cho các màn hình
 /// (test thay bằng bản giả).
@@ -20,6 +21,7 @@ class ShopDichVu {
     required this.storage,
     required this.xacThuc,
     required this.danhGia,
+    required this.uuDai,
     this.pickImages,
     this.pickVideo,
   });
@@ -35,6 +37,9 @@ class ShopDichVu {
 
   /// Đọc đánh giá shop / sản phẩm (viết đánh giá qua [donHang]).
   final DanhGiaService danhGia;
+
+  /// Trả giá, voucher.
+  final UuDaiService uuDai;
   final ImagePickerCallback? pickImages;
   final VideoPickerCallback? pickVideo;
 
@@ -48,6 +53,7 @@ class ShopDichVu {
       storage: FirebaseImageStorageService(),
       xacThuc: FirebaseXacThucService(),
       danhGia: FirebaseDanhGiaService(),
+      uuDai: FirebaseUuDaiService(uid: uid),
     );
   }
 }

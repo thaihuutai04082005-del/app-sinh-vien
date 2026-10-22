@@ -101,6 +101,23 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Trả giá (Make an offer): chỉ người trả giá và shop.
+    match /offers/{id} {
+      allow read: if request.auth != null
+        && (resource.data.buyerId == request.auth.uid || resource.data.shopId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Voucher của shop: công khai để người mua xem / áp mã. Lượt đã dùng của từng người thì không.
+    match /vouchers/{code} {
+      allow read: if true;
+      allow write: if false;
+
+      match /used/{uid} {
+        allow read, write: if false;
+      }
+    }
+
     // Điểm đánh giá cộng dồn của shop: công khai.
     match /shop_stats/{shopId} {
       allow read: if true;

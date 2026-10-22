@@ -8,6 +8,8 @@ import '../services/shop_dich_vu.dart';
 import 'dang_san_pham_screen.dart';
 import 'don_hang_list_screen.dart';
 import 'san_pham_detail_screen.dart';
+import 'tra_gia_screen.dart';
+import 'voucher_screen.dart';
 
 /// Kênh người bán: sản phẩm của mình (sửa / xóa trong màn chi tiết) và đơn bán.
 class KenhNguoiBanScreen extends StatefulWidget {
@@ -45,6 +47,16 @@ class _KenhNguoiBanScreenState extends State<KenhNguoiBanScreen> {
       appBar: AppBar(
         title: const Text('Kênh người bán'),
         actions: [
+          IconButton(
+            tooltip: 'Khách trả giá',
+            onPressed: () => _mo(TraGiaScreen(dv: widget.dv, laNguoiBan: true)),
+            icon: const Icon(Icons.handshake_outlined),
+          ),
+          IconButton(
+            tooltip: 'Voucher',
+            onPressed: () => _mo(VoucherScreen(dv: widget.dv)),
+            icon: const Icon(Icons.confirmation_number_outlined),
+          ),
           TextButton.icon(
             onPressed: () =>
                 _mo(DonHangListScreen(dv: widget.dv, laNguoiBan: true)),

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  chuyenTrangThaiDon, gioHang, huyQuaHan, nhanHang, phanXuKhieuNai, sanPham, tachDon, tuXuLyTraHang,
+  chuyenTrangThaiDon, gioHang, huyQuaHan, nhanHang, phanHoiTraGia, phanXuKhieuNai, sanPham, tachDon, tinhGiam,
+  traGiaMoi, tuXuLyTraHang, voucherMoi,
 } from '../src/shop_logic.js';
 
 const NOW = Date.UTC(2026, 9, 13, 3);
@@ -195,4 +196,66 @@ test('đơn online bị hủy thì hoàn tiền', () => {
   const kq = chuyenTrangThaiDon({ ...don('pending_confirmation'), paymentMethod: 'online' }, 'huy', 'm', { reason: 'x' }, NOW);
   assert.equal(kq.ghi.refunded, true);
   assert.equal(huyQuaHan(NOW, { paymentMethod: 'online' }).ghi.refunded, true);
+});
+
+test('trả giá: từ 50% đến dưới giá niêm yết, không tự trả giá hàng mình, hết hàng thì thôi', () => {
+  const sp = { shopId: 's', name: 'Áo', price: 100000, stock: 2 };
+  assert.deepEqual(traGiaMoi({ offerPrice: 70000, message: ' Bớt nha ' }, sp, 'm'), {
+    offerPrice: 70000, price: 100000, size: '', message: 'Bớt nha',
+  });
+  const coSize = { ...sp, sizes: ['M'] };
+  assert.throws(() => traGiaMoi({ offerPrice: 70000 }, coSize, 'm'), loiCo(/Chọn size/));
+  assert.equal(traGiaMoi({ offerPrice: 70000, size: 'M' }, coSize, 'm').size, 'M');
+  assert.throws(() => traGiaMoi({ offerPrice: 49000 }, sp, 'm'), loiCo(/tối thiểu là 50\.000đ/));
+  assert.throws(() => traGiaMoi({ offerPrice: 100000 }, sp, 'm'), loiCo(/Giá trả/));
+  assert.throws(() => traGiaMoi({ offerPrice: 70000 }, sp, 's'), loiCo(/chính bạn/));
+  assert.throws(() => traGiaMoi({ offerPrice: 70000 }, { ...sp, stock: 0 }, 'm'), loiCo(/hết hàng/));
+});
+
+test('trả lời trả giá: shop chấp nhận thì có hạn mua 24 giờ; người mua chỉ rút lại', () => {
+  const o = { buyerId: 'm', shopId: 's', status: 'pending' };
+  assert.deepEqual(phanHoiTraGia(o, 'chapNhan', 's', NOW), { status: 'accepted', expiresAt: NOW + H });
+  assert.deepEqual(phanHoiTraGia(o, 'tuChoi', 's', NOW), { status: 'rejected' });
+  assert.deepEqual(phanHoiTraGia(o, 'huy', 'm', NOW), { status: 'cancelled' });
+  assert.throws(() => phanHoiTraGia(o, 'chapNhan', 'm', NOW), loiCo(/quyền/));
+  assert.throws(() => phanHoiTraGia({ ...o, status: 'accepted' }, 'tuChoi', 's', NOW), loiCo(/đã được trả lời/));
+});
+
+test('đặt hàng theo giá trả: đúng người, đúng sản phẩm, còn hạn, 1 cái', () => {
+  const offers = new Map([['o1', { buyerId: 'buyer', productId: 'c', status: 'accepted', offerPrice: 90000, expiresAt: NOW + H }]]);
+  const { dons } = tachDon([{ productId: 'c', size: '', quantity: 1, offerId: 'o1' }], KHO, 'buyer', offers, NOW);
+  assert.equal(dons[0].totalPrice, 90000);
+  assert.equal(dons[0].offerPrice, 90000);
+  assert.equal(dons[0].items[0].listPrice, 120000);
+  const dat = (it, ds = offers, ai = 'buyer', luc = NOW) => () => tachDon([{ productId: 'c', size: '', quantity: 1, offerId: 'o1', ...it }], KHO, ai, ds, luc);
+  assert.throws(dat({ quantity: 2 }), loiCo(/1 sản phẩm/));
+  assert.throws(dat({}, offers, 'khac'), loiCo(/không hợp lệ/));
+  assert.throws(dat({}, offers, 'buyer', NOW + H), loiCo(/hết hạn/));
+  assert.throws(dat({}, new Map([['o1', { ...offers.get('o1'), status: 'used' }]])), loiCo(/chưa được shop chấp nhận/));
+  // Giỏ không gộp dòng trả giá với dòng giá thường.
+  assert.equal(gioHang([
+    { productId: 'c', quantity: 1, offerId: 'o1' },
+    { productId: 'c', quantity: 1 },
+  ]).length, 2);
+});
+
+test('voucher: tạo đúng dữ liệu, tính giảm theo % có trần, theo số tiền, đơn tối thiểu', () => {
+  const v = voucherMoi({
+    code: ' sale10 ', discountType: 'percent', discountValue: 10, maxDiscount: 20000,
+    minOrderValue: 100000, usageLimit: 50, expiredAt: NOW + H,
+  }, NOW);
+  assert.equal(v.code, 'SALE10');
+  assert.throws(() => voucherMoi({ ...v, code: 'GIẢM' }, NOW), loiCo(/Mã voucher/));
+  assert.throws(() => voucherMoi({ ...v, discountValue: 95 }, NOW), loiCo(/Phần trăm/));
+  assert.throws(() => voucherMoi({ ...v, expiredAt: NOW - 1 }, NOW), loiCo(/90 ngày/));
+
+  assert.equal(tinhGiam(v, 150000, NOW), 15000);
+  assert.equal(tinhGiam(v, 500000, NOW), 20000);
+  assert.throws(() => tinhGiam(v, 99000, NOW), loiCo(/từ 100\.000đ/));
+  assert.throws(() => tinhGiam({ ...v, usedCount: 50 }, 150000, NOW), loiCo(/hết lượt/));
+  assert.throws(() => tinhGiam(v, 150000, NOW + H), loiCo(/hết hạn/));
+  assert.throws(() => tinhGiam({ ...v, active: false }, 150000, NOW), loiCo(/ngừng/));
+  assert.throws(() => tinhGiam(null, 150000, NOW), loiCo(/không tồn tại/));
+  const fixed = { ...v, discountType: 'fixed', discountValue: 30000, maxDiscount: null, minOrderValue: 0 };
+  assert.equal(tinhGiam(fixed, 20000, NOW), 20000);
 });

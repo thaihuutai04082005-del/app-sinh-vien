@@ -1,20 +1,24 @@
 // Firestore của Shop đồ rẻ: sản phẩm `products`, đơn hàng `orders`, đánh giá `reviews`,
-// điểm của shop `shop_stats/{shopId}`.
+// điểm của shop `shop_stats/{shopId}`, trả giá `offers`, voucher `vouchers/{code}`
+// (lượt đã dùng của từng người ở `vouchers/{code}/used/{uid}`).
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { khongCoQuyen, khongTimThay, loi } from './loi.js';
 import { chuoi, motTrong } from './kiem_tra.js';
 import { TIEU_CHI_SHOP, noiDungDanhGia } from './danh_gia.js';
 import { tangLuotDang } from './tai_khoan.js';
 import {
-  CACH_THANH_TOAN, HAN_XAC_NHAN_MS, chuyenTrangThaiDon, gioHang, huyQuaHan, nhanHang, phanXuKhieuNai, sanPham,
-  tachDon, trangThaiKho, tuXuLyTraHang,
+  CACH_THANH_TOAN, HAN_XAC_NHAN_MS, chuyenTrangThaiDon, gioHang, huyQuaHan, maVoucher, nhanHang, phanHoiTraGia,
+  phanXuKhieuNai, sanPham, tachDon, tinhGiam, traGiaMoi, trangThaiKho, tuXuLyTraHang, voucherMoi,
 } from './shop_logic.js';
 
 const products = () => getFirestore().collection('products');
 const orders = () => getFirestore().collection('orders');
 const reviews = () => getFirestore().collection('reviews');
 const shopStats = (shopId) => getFirestore().collection('shop_stats').doc(shopId);
+const offers = () => getFirestore().collection('offers');
+const vouchers = () => getFirestore().collection('vouchers');
 const DON_CHO_TOI_DA = 10;
+const TRA_GIA_CHO_TOI_DA = 10;
 
 export async function dangSanPham(nd, tham) {
   // Ai cũng bán được (như Vinted), chỉ cần số điện thoại đã OTP để người mua liên hệ được.
@@ -73,22 +77,51 @@ export async function datHang(nd, tham) {
     throw loi(`Bạn đang có ${DON_CHO_TOI_DA} đơn chờ shop xác nhận. Đợi shop xác nhận bớt rồi đặt tiếp.`);
   }
 
+  const voucherCode = tham.voucherCode ? maVoucher(tham.voucherCode) : null;
+
   const ids = [];
   await getFirestore().runTransaction(async (tx) => {
     ids.length = 0;
-    const refs = [...new Set(items.map((i) => i.productId))].map((id) => products().doc(id));
-    const snaps = await tx.getAll(...refs);
-    const sanPhams = new Map(snaps.filter((s) => s.exists).map((s) => [s.id, s.data()]));
-    const { dons, tonKhoMoi } = tachDon(items, sanPhams, nd.uid);
-
     const now = Date.now();
+    const refs = [...new Set(items.map((i) => i.productId))].map((id) => products().doc(id));
+    const offerIds = items.filter((i) => i.offerId).map((i) => i.offerId);
+    const [snaps, offerSnaps, vSnap, daDung] = await Promise.all([
+      tx.getAll(...refs),
+      offerIds.length ? tx.getAll(...offerIds.map((id) => offers().doc(id))) : [],
+      voucherCode ? tx.get(vouchers().doc(voucherCode)) : null,
+      voucherCode ? tx.get(vouchers().doc(voucherCode).collection('used').doc(nd.uid)) : null,
+    ]);
+    const sanPhams = new Map(snaps.filter((s) => s.exists).map((s) => [s.id, s.data()]));
+    const offerMap = new Map(offerSnaps.filter((s) => s.exists).map((s) => [s.id, s.data()]));
+    const { dons, tonKhoMoi } = tachDon(items, sanPhams, nd.uid, offerMap, now);
+
+    // Voucher là của một shop: chỉ giảm cho đơn của shop đó.
+    let donGiam = null;
+    if (voucherCode) {
+      const v = vSnap.exists ? vSnap.data() : null;
+      donGiam = dons.find((d) => d.shopId === v?.shopId);
+      if (v && !donGiam) throw loi(`Mã ${voucherCode} chỉ dùng cho sản phẩm của ${v.shopName || 'shop phát mã'}.`);
+      if (daDung?.exists) throw loi('Bạn đã dùng mã này rồi.');
+      const giam = tinhGiam(v, donGiam?.subtotal ?? 0, now);
+      donGiam.voucherCode = voucherCode;
+      donGiam.discountAmount = giam;
+      donGiam.totalPrice = donGiam.subtotal - giam;
+    }
+
     for (const [id, stock] of tonKhoMoi) {
       tx.update(products().doc(id), { stock, status: trangThaiKho(stock), updatedAt: FieldValue.serverTimestamp() });
+    }
+    for (const id of offerIds) tx.update(offers().doc(id), { status: 'used', updatedAt: FieldValue.serverTimestamp() });
+    if (donGiam) {
+      tx.update(vouchers().doc(voucherCode), { usedCount: FieldValue.increment(1) });
+      tx.set(vouchers().doc(voucherCode).collection('used').doc(nd.uid), { at: now });
     }
     for (const don of dons) {
       const ref = orders().doc();
       ids.push(ref.id);
       tx.create(ref, {
+        voucherCode: null,
+        discountAmount: 0,
         ...don,
         ...giao,
         buyerId: nd.uid,
@@ -96,9 +129,6 @@ export async function datHang(nd, tham) {
         paymentMethod,
         paid: paymentMethod === 'online',
         refunded: false,
-        voucherCode: null,
-        discountAmount: 0,
-        offerPrice: null,
         fundsReleased: false,
         reviewed: false,
         status: 'pending_confirmation',
@@ -137,10 +167,18 @@ function moc(ghi) {
   return ghi;
 }
 
-/** Ghi kết quả chuyển trạng thái `kq` vào đơn, trả lại tồn kho nếu cần. */
+/**
+ * Ghi kết quả chuyển trạng thái `kq` vào đơn, trả lại tồn kho nếu cần. Đơn bị hủy thì trả lại
+ * lượt voucher cho người mua (trả hàng thì không, vì đơn đã giao).
+ */
 async function apDung(tx, ref, don, kq) {
   const ghiKho = kq.hoanKho ? await hoanKho(tx, don) : () => {};
   ghiKho();
+  if (kq.ghi.status === 'cancelled' && don.voucherCode) {
+    const v = vouchers().doc(don.voucherCode);
+    tx.update(v, { usedCount: FieldValue.increment(-1) });
+    tx.delete(v.collection('used').doc(don.buyerId));
+  }
   tx.update(ref, { ...moc(kq.ghi), lichSu: FieldValue.arrayUnion(kq.lichSuMoi), updatedAt: FieldValue.serverTimestamp() });
 }
 
@@ -240,4 +278,77 @@ export async function danhGiaDon(nd, tham) {
     for (const s of sps) if (s.exists) tx.update(s.ref, cong);
   });
   return { id: `order_${id}` };
+}
+
+/** Người mua trả giá một sản phẩm (Make an offer, mục 3.4); shop trả lời trong kênh người bán. */
+export async function traGia(nd, tham) {
+  const productId = chuoi(tham.productId, 'Sản phẩm', { max: 128 });
+  const snap = await products().doc(productId).get();
+  if (!snap.exists) throw khongTimThay('Sản phẩm');
+  const sp = snap.data();
+  const tg = traGiaMoi(tham, sp, nd.uid);
+  const dangCho = await offers().where('buyerId', '==', nd.uid).where('status', '==', 'pending').get();
+  if (dangCho.docs.some((d) => d.get('productId') === productId)) {
+    throw loi('Bạn đã trả giá sản phẩm này, chờ shop trả lời.');
+  }
+  if (dangCho.size >= TRA_GIA_CHO_TOI_DA) throw loi(`Bạn đang có ${TRA_GIA_CHO_TOI_DA} lần trả giá chờ trả lời.`);
+  const ref = offers().doc();
+  await ref.create({
+    ...tg,
+    productId,
+    productName: sp.name,
+    productImage: sp.images?.[0] ?? '',
+    shopId: sp.shopId,
+    shopName: sp.shopName ?? '',
+    buyerId: nd.uid,
+    buyerName: nd.ten,
+    status: 'pending',
+    expiresAt: null,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  return { id: ref.id };
+}
+
+/** hanhDong: chapNhan | tuChoi (shop) | huy (người mua). */
+export async function phanHoiTraGiaApi(nd, tham) {
+  const ref = offers().doc(chuoi(tham.offerId, 'Trả giá', { max: 128 }));
+  await getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw khongTimThay('Lần trả giá');
+    const ghi = phanHoiTraGia(snap.data(), tham.hanhDong, nd.uid, Date.now());
+    if (typeof ghi.expiresAt === 'number') ghi.expiresAt = Timestamp.fromMillis(ghi.expiresAt);
+    tx.update(ref, { ...ghi, updatedAt: FieldValue.serverTimestamp() });
+  });
+  return { id: ref.id };
+}
+
+/** Shop tạo voucher; mã là id document nên không trùng giữa các shop. */
+export async function taoVoucher(nd, tham) {
+  const now = Date.now();
+  const v = voucherMoi(tham, now);
+  const ref = vouchers().doc(v.code);
+  await getFirestore().runTransaction(async (tx) => {
+    if ((await tx.get(ref)).exists) throw loi(`Mã ${v.code} đã có người dùng, chọn mã khác.`);
+    tx.create(ref, {
+      ...v,
+      expiredAt: Timestamp.fromMillis(v.expiredAt),
+      shopId: nd.uid,
+      shopName: nd.ten,
+      usedCount: 0,
+      active: true,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  });
+  return { id: v.code };
+}
+
+/** Shop ngừng một voucher của mình (đơn đã áp mã vẫn giữ nguyên). */
+export async function ngungVoucher(nd, tham) {
+  const ref = vouchers().doc(maVoucher(tham.code));
+  const snap = await ref.get();
+  if (!snap.exists) throw khongTimThay('Voucher');
+  if (snap.get('shopId') !== nd.uid) throw khongCoQuyen();
+  await ref.update({ active: false });
+  return { id: ref.id };
 }

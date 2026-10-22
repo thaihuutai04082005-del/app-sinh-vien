@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter/services.dart';
+
 import '../../../core/utils/formatters.dart';
 import '../../../shared/models/danh_gia.dart';
 import '../../../shared/widgets/danh_gia_widgets.dart';
@@ -14,6 +16,7 @@ import 'dang_san_pham_screen.dart';
 import 'dat_hang_screen.dart';
 import 'gian_hang_screen.dart';
 import 'gio_hang_screen.dart';
+import 'tra_gia_screen.dart';
 
 /// Chi tiết sản phẩm: chọn size, số lượng, thêm vào giỏ / mua ngay.
 /// Chủ sản phẩm thấy nút sửa, xóa thay cho nút mua.
@@ -79,6 +82,41 @@ class _SanPhamDetailScreenState extends State<SanPhamDetailScreen> {
         builder: (_) => DatHangScreen(dv: widget.dv, dong: [d]),
       ),
     );
+  }
+
+  Future<void> _traGia(Product p) async {
+    if (p.sizes.isNotEmpty && _size == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Chọn size trước đã.')));
+      return;
+    }
+    final kq = await _hoiTraGia(context, p.price);
+    if (kq == null || !mounted) return;
+    try {
+      await widget.dv.uuDai.traGia(
+        p.id,
+        kq.$1,
+        size: _size ?? '',
+        message: kq.$2,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Đã gửi trả giá, chờ shop trả lời.'),
+          action: SnackBarAction(
+            label: 'Xem',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => TraGiaScreen(dv: widget.dv, laNguoiBan: false),
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
   }
 
   Future<void> _sua(Product p) async {
@@ -314,6 +352,12 @@ class _SanPhamDetailScreenState extends State<SanPhamDetailScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => _traGia(product),
+              icon: const Icon(Icons.handshake_outlined),
+              label: const Text('Trả giá với shop'),
+            ),
           ] else
             const Text('Sản phẩm đã hết hàng.'),
           const SizedBox(height: 24),
@@ -326,4 +370,63 @@ class _SanPhamDetailScreenState extends State<SanPhamDetailScreen> {
       ),
     );
   }
+}
+
+/// Hỏi giá muốn trả (từ 50% đến dưới giá niêm yết) và lời nhắn cho shop.
+Future<(int, String)?> _hoiTraGia(BuildContext context, num giaNiemYet) {
+  final gia = TextEditingController();
+  final nhan = TextEditingController();
+  final thapNhat = (giaNiemYet / 2).ceil();
+  String? loi;
+  return showDialog<(int, String)>(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: const Text('Trả giá'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: gia,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                labelText: 'Giá bạn muốn trả',
+                suffixText: 'đ',
+                errorText: loi,
+                helperText:
+                    'Từ ${formatPrice(thapNhat)} đến dưới ${formatPrice(giaNiemYet)}',
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: nhan,
+              maxLength: 200,
+              decoration: const InputDecoration(
+                labelText: 'Lời nhắn (không bắt buộc)',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Thôi'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final g = int.tryParse(gia.text) ?? 0;
+              if (g < thapNhat || g >= giaNiemYet) {
+                setState(() => loi = 'Giá chưa hợp lệ');
+                return;
+              }
+              Navigator.pop(context, (g, nhan.text.trim()));
+            },
+            child: const Text('Gửi trả giá'),
+          ),
+        ],
+      ),
+    ),
+  );
 }

@@ -6,9 +6,11 @@ import 'package:app_sinh_vien/features/auth/services/xac_thuc_service.dart';
 import 'package:app_sinh_vien/features/shop/models/don_hang.dart';
 import 'package:app_sinh_vien/features/shop/models/gio_hang.dart';
 import 'package:app_sinh_vien/features/shop/models/product.dart';
+import 'package:app_sinh_vien/features/shop/models/uu_dai.dart';
 import 'package:app_sinh_vien/features/shop/services/don_hang_service.dart';
 import 'package:app_sinh_vien/features/shop/services/product_service.dart';
 import 'package:app_sinh_vien/features/shop/services/shop_dich_vu.dart';
+import 'package:app_sinh_vien/features/shop/services/uu_dai_service.dart';
 import 'package:app_sinh_vien/shared/models/danh_gia.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -38,6 +40,8 @@ class KhoGia {
   final orders = <DonHang>[];
   final danhGia = DanhGiaGia();
   final diemShop = <String, DiemDanhGia>{};
+  final traGia = <TraGia>[];
+  final vouchers = <String, Voucher>{};
   var _id = 0;
 
   String id(String tienTo) => '$tienTo${++_id}';
@@ -105,6 +109,10 @@ class FakeDonHangService implements DonHangService {
     for (final d in dong) {
       (theoShop[d.shopId] ??= []).add(d);
     }
+    final v = nhan.voucherCode == null ? null : kho.vouchers[nhan.voucherCode];
+    if (nhan.voucherCode != null && v == null) {
+      throw const ApiException('Mã voucher không tồn tại.');
+    }
     return [
       for (final e in theoShop.entries)
         _them(
@@ -119,6 +127,10 @@ class FakeDonHangService implements DonHangService {
             address: nhan.address,
             deliveryMethod: nhan.deliveryMethod,
             paymentMethod: nhan.paymentMethod,
+            voucherCode: v?.shopId == e.key ? v!.code : null,
+            discountAmount: v?.shopId == e.key
+                ? v!.tinhGiam(_tong(e.value)).$1
+                : 0,
             paid: nhan.paymentMethod == 'online',
             items: [
               for (final d in e.value)
@@ -131,16 +143,19 @@ class FakeDonHangService implements DonHangService {
                   quantity: d.quantity,
                 ),
             ],
-            totalPrice: e.value.fold<num>(
-              0,
-              (s, d) => s + d.price * d.quantity,
-            ),
+            subtotal: _tong(e.value),
+            totalPrice:
+                _tong(e.value) -
+                (v?.shopId == e.key ? v!.tinhGiam(_tong(e.value)).$1 : 0),
             status: 'pending_confirmation',
             confirmDeadline: DateTime.now().add(const Duration(days: 2)),
           ),
         ),
     ];
   }
+
+  static num _tong(List<DongGio> ds) =>
+      ds.fold<num>(0, (s, d) => s + d.price * d.quantity);
 
   String _them(DonHang d) {
     kho.orders.insert(0, d);
@@ -282,6 +297,117 @@ class FakeDonHangService implements DonHangService {
   }
 }
 
+class FakeUuDaiService implements UuDaiService {
+  FakeUuDaiService(this.kho, this.uid);
+
+  final KhoGia kho;
+  final String uid;
+
+  @override
+  Future<String> traGia(
+    String productId,
+    int offerPrice, {
+    String size = '',
+    String message = '',
+  }) async {
+    final p = kho.products.firstWhere((p) => p.id == productId);
+    final t = TraGia(
+      id: kho.id('t'),
+      productId: p.id,
+      productName: p.name,
+      shopId: p.shopId,
+      shopName: p.shopName,
+      buyerId: uid,
+      buyerName: 'Người mua',
+      price: p.price,
+      offerPrice: offerPrice,
+      size: size,
+      message: message,
+      status: 'pending',
+    );
+    kho.traGia.insert(0, t);
+    return t.id;
+  }
+
+  @override
+  Future<void> phanHoiTraGia(String offerId, String hanhDong) async {
+    final i = kho.traGia.indexWhere((t) => t.id == offerId);
+    final t = kho.traGia[i];
+    kho.traGia[i] = TraGia(
+      id: t.id,
+      productId: t.productId,
+      productName: t.productName,
+      shopId: t.shopId,
+      shopName: t.shopName,
+      buyerId: t.buyerId,
+      buyerName: t.buyerName,
+      price: t.price,
+      offerPrice: t.offerPrice,
+      size: t.size,
+      message: t.message,
+      status: {
+        'chapNhan': 'accepted',
+        'tuChoi': 'rejected',
+        'huy': 'cancelled',
+      }[hanhDong]!,
+      expiresAt: hanhDong == 'chapNhan'
+          ? DateTime.now().add(const Duration(days: 1))
+          : null,
+    );
+  }
+
+  @override
+  Future<List<TraGia>> danhSachTraGia({required bool laNguoiBan}) async => [
+    for (final t in kho.traGia)
+      if ((laNguoiBan ? t.shopId : t.buyerId) == uid) t,
+  ];
+
+  @override
+  Future<List<Voucher>> voucherCuaShop(String shopId) async => [
+    for (final v in kho.vouchers.values)
+      if (v.shopId == shopId) v,
+  ];
+
+  @override
+  Future<Voucher?> timVoucher(String code) async =>
+      kho.vouchers[code.trim().toUpperCase()];
+
+  @override
+  Future<void> taoVoucher(VoucherNhap v) async {
+    if (kho.vouchers.containsKey(v.code)) {
+      throw ApiException('Mã ${v.code} đã có người dùng, chọn mã khác.');
+    }
+    kho.vouchers[v.code] = Voucher(
+      code: v.code,
+      shopId: uid,
+      shopName: 'Shop $uid',
+      discountType: v.discountType,
+      discountValue: v.discountValue,
+      maxDiscount: v.maxDiscount,
+      minOrderValue: v.minOrderValue,
+      usageLimit: v.usageLimit,
+      expiredAt: v.expiredAt,
+    );
+  }
+
+  @override
+  Future<void> ngungVoucher(String code) async {
+    final v = kho.vouchers[code]!;
+    kho.vouchers[code] = Voucher(
+      code: v.code,
+      shopId: v.shopId,
+      shopName: v.shopName,
+      discountType: v.discountType,
+      discountValue: v.discountValue,
+      maxDiscount: v.maxDiscount,
+      minOrderValue: v.minOrderValue,
+      usageLimit: v.usageLimit,
+      expiredAt: v.expiredAt,
+      active: false,
+    );
+  }
+}
+
 ShopDichVu shopDv(
   KhoGia kho,
   String uid, {
@@ -295,6 +421,7 @@ ShopDichVu shopDv(
   storage: InstantStorage(),
   xacThuc: xacThuc ?? XacThucGia.day(),
   danhGia: kho.danhGia,
+  uuDai: FakeUuDaiService(kho, uid),
   pickImages: pickOne,
 );
 

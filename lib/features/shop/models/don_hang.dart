@@ -9,6 +9,7 @@ class MonTrongDon {
     required this.price,
     required this.size,
     required this.quantity,
+    this.listPrice,
   });
 
   final String productId;
@@ -18,6 +19,9 @@ class MonTrongDon {
   final String size;
   final int quantity;
 
+  /// Giá niêm yết khi món này mua theo giá đã trả ([price] là giá trả).
+  final num? listPrice;
+
   factory MonTrongDon.fromMap(Map<String, dynamic> m) => MonTrongDon(
     productId: m['productId'] as String? ?? '',
     name: m['name'] as String? ?? '',
@@ -25,6 +29,7 @@ class MonTrongDon {
     price: m['price'] as num? ?? 0,
     size: m['size'] as String? ?? '',
     quantity: (m['quantity'] as num?)?.toInt() ?? 1,
+    listPrice: m['listPrice'] as num?,
   );
 }
 
@@ -61,13 +66,23 @@ class DonHang {
     this.returnRejectReason,
     this.disputeReason,
     this.disputeResult,
+    this.subtotal,
+    this.voucherCode,
+    this.discountAmount = 0,
   });
 
   final String id;
   final String buyerId;
   final String shopId;
   final List<MonTrongDon> items;
+
+  /// Số tiền phải trả = [subtotal] − [discountAmount].
   final num totalPrice;
+
+  /// Tạm tính trước giảm giá (đơn cũ không có thì bằng [totalPrice]).
+  final num? subtotal;
+  final String? voucherCode;
+  final num discountAmount;
 
   /// pending_confirmation | to_ship | shipping | delivered | buyer_confirmed | cancelled
   /// | return_requested | return_rejected | return_disputed | return_refund
@@ -207,6 +222,9 @@ class DonHang {
     returnRejectReason: m['returnRejectReason'] as String?,
     disputeReason: m['disputeReason'] as String?,
     disputeResult: m['disputeResult'] as String?,
+    subtotal: m['subtotal'] as num?,
+    voucherCode: m['voucherCode'] as String?,
+    discountAmount: m['discountAmount'] as num? ?? 0,
   );
 }
 
@@ -219,6 +237,7 @@ class ThongTinNhan {
     this.address = '',
     this.note = '',
     this.paymentMethod = 'cod',
+    this.voucherCode,
   });
 
   final String receiverName;
@@ -230,6 +249,9 @@ class ThongTinNhan {
   /// cod | online
   final String paymentMethod;
 
+  /// Mã voucher của một shop, chỉ giảm cho đơn của shop đó.
+  final String? voucherCode;
+
   Map<String, dynamic> toMap() => {
     'receiverName': receiverName,
     'phone': phone,
@@ -237,5 +259,6 @@ class ThongTinNhan {
     'address': address,
     'note': note,
     'paymentMethod': paymentMethod,
+    'voucherCode': ?voucherCode,
   };
 }

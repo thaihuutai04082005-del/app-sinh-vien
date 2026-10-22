@@ -5,7 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'product.dart';
 
-/// Một dòng trong giỏ. Giá chỉ để hiển thị; khi đặt, server tính lại theo giá hiện tại.
+/// Một dòng trong giỏ. Giá chỉ để hiển thị; khi đặt, server tính lại theo giá hiện tại
+/// (hoặc giá trả đã được shop chấp nhận nếu có [offerId]).
 class DongGio {
   const DongGio({
     required this.productId,
@@ -17,6 +18,7 @@ class DongGio {
     required this.size,
     required this.quantity,
     required this.stock,
+    this.offerId,
   });
 
   final String productId;
@@ -31,7 +33,10 @@ class DongGio {
   /// Tồn kho lúc thêm vào giỏ, để giới hạn nút "+".
   final int stock;
 
-  String get khoa => '$productId|$size';
+  /// Mua theo giá đã trả (`offers/{offerId}`), chỉ 1 sản phẩm.
+  final String? offerId;
+
+  String get khoa => offerId == null ? '$productId|$size' : 'offer|$offerId';
 
   factory DongGio.tu(
     Product p, {
@@ -59,6 +64,7 @@ class DongGio {
     size: size,
     quantity: q,
     stock: stock,
+    offerId: offerId,
   );
 
   Map<String, dynamic> toJson() => {
@@ -71,6 +77,7 @@ class DongGio {
     'size': size,
     'quantity': quantity,
     'stock': stock,
+    'offerId': ?offerId,
   };
 
   /// Phần gửi lên server khi đặt hàng.
@@ -78,6 +85,7 @@ class DongGio {
     'productId': productId,
     'size': size,
     'quantity': quantity,
+    'offerId': ?offerId,
   };
 
   factory DongGio.fromJson(Map<String, dynamic> m) => DongGio(
@@ -90,6 +98,7 @@ class DongGio {
     size: m['size'] as String? ?? '',
     quantity: (m['quantity'] as num?)?.toInt() ?? 1,
     stock: (m['stock'] as num?)?.toInt() ?? 1,
+    offerId: m['offerId'] as String?,
   );
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/don_hang.dart';
 import '../models/gio_hang.dart';
+import '../models/uu_dai.dart';
 import '../services/shop_dich_vu.dart';
 import 'don_hang_list_screen.dart';
 
@@ -34,6 +35,11 @@ class _DatHangScreenState extends State<DatHangScreen> {
   final _ghiChu = TextEditingController();
   String _cachNhan = 'giao_tan_tro';
   String _thanhToan = 'cod';
+  final _maVoucher = TextEditingController();
+  Voucher? _voucher;
+  num _giam = 0;
+  String? _loiVoucher;
+  bool _dangApMa = false;
   bool _dangGui = false;
   String? _loi;
 
@@ -49,8 +55,50 @@ class _DatHangScreenState extends State<DatHangScreen> {
     _sdt.dispose();
     _diaChi.dispose();
     _ghiChu.dispose();
+    _maVoucher.dispose();
     super.dispose();
   }
+
+  /// Tạm tính các món của một shop (voucher chỉ giảm cho đơn của shop phát mã).
+  num _tamTinhShop(String shopId) => widget.dong
+      .where((d) => d.shopId == shopId)
+      .fold<num>(0, (s, d) => s + d.price * d.quantity);
+
+  Future<void> _apMa() async {
+    final ma = _maVoucher.text.trim();
+    if (ma.isEmpty) return;
+    setState(() {
+      _dangApMa = true;
+      _loiVoucher = null;
+    });
+    try {
+      final v = await widget.dv.uuDai.timVoucher(ma);
+      String? loi;
+      num giam = 0;
+      if (v == null) {
+        loi = 'Mã voucher không tồn tại.';
+      } else if (_tamTinhShop(v.shopId) == 0) {
+        loi = 'Mã này chỉ dùng cho sản phẩm của ${v.shopName}.';
+      } else {
+        (giam, loi) = v.tinhGiam(_tamTinhShop(v.shopId));
+      }
+      setState(() {
+        _voucher = loi == null ? v : null;
+        _giam = giam;
+        _loiVoucher = loi;
+      });
+    } catch (e) {
+      setState(() => _loiVoucher = '$e');
+    } finally {
+      if (mounted) setState(() => _dangApMa = false);
+    }
+  }
+
+  void _boMa() => setState(() {
+    _voucher = null;
+    _giam = 0;
+    _maVoucher.clear();
+  });
 
   Future<void> _dat() async {
     if (!_formKey.currentState!.validate()) return;
@@ -68,6 +116,7 @@ class _DatHangScreenState extends State<DatHangScreen> {
           address: _diaChi.text.trim(),
           note: _ghiChu.text.trim(),
           paymentMethod: _thanhToan,
+          voucherCode: _voucher?.code,
         ),
       );
       if (widget.tuGioHang) {
@@ -214,6 +263,42 @@ class _DatHangScreenState extends State<DatHangScreen> {
               'Shop báo đã giao thì bạn có 3 ngày để yêu cầu trả hàng.',
               style: theme.textTheme.bodySmall,
             ),
+            const SizedBox(height: 10),
+            if (_voucher == null)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _maVoucher,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: InputDecoration(
+                        labelText: 'Mã voucher của shop',
+                        errorText: _loiVoucher,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: OutlinedButton(
+                      onPressed: _dangApMa ? null : _apMa,
+                      child: const Text('Áp dụng'),
+                    ),
+                  ),
+                ],
+              )
+            else
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.confirmation_number_outlined),
+                title: Text('${_voucher!.code} · -${formatPrice(_giam)}'),
+                subtitle: Text(_voucher!.moTa(formatGiaGon)),
+                trailing: TextButton(
+                  onPressed: _boMa,
+                  child: const Text('Bỏ mã'),
+                ),
+              ),
             if (_soShop > 1)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -236,7 +321,7 @@ class _DatHangScreenState extends State<DatHangScreen> {
               child: Text(
                 _dangGui
                     ? 'Đang đặt...'
-                    : 'Đặt hàng · ${formatPrice(_tamTinh)}',
+                    : 'Đặt hàng · ${formatPrice(_tamTinh - _giam)}',
               ),
             ),
           ],

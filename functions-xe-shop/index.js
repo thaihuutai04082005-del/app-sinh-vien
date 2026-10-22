@@ -37,6 +37,10 @@ export const shopApi = onCall({ region: REGION }, async (request) => {
     case 'xuLyDonQuaHan': return shop.xuLyDonQuaHan(nd);
     case 'danhGiaDon': return shop.danhGiaDon(nd, tham);
     case 'xuLyKhieuNai': return shop.xuLyKhieuNai(nd, tham);
+    case 'traGia': return shop.traGia(nd, tham);
+    case 'phanHoiTraGia': return shop.phanHoiTraGiaApi(nd, tham);
+    case 'taoVoucher': return shop.taoVoucher(nd, tham);
+    case 'ngungVoucher': return shop.ngungVoucher(nd, tham);
     default: throw thamSoSai('Hành động không hợp lệ.');
   }
 });

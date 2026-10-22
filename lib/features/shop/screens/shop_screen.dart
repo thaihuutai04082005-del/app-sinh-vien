@@ -10,6 +10,7 @@ import 'don_hang_list_screen.dart';
 import 'gio_hang_screen.dart';
 import 'kenh_nguoi_ban_screen.dart';
 import 'phan_xu_tra_hang_screen.dart';
+import 'tra_gia_screen.dart';
 import 'san_pham_detail_screen.dart';
 
 /// Sảnh Shop đồ rẻ (mục 3.4): duyệt theo danh mục / mức giá, giỏ hàng,
@@ -83,6 +84,12 @@ class _ShopScreenState extends State<ShopScreen> {
                     icon: const Icon(Icons.gavel_outlined),
                   )
                 : const SizedBox.shrink(),
+          ),
+          IconButton(
+            tooltip: 'Trả giá của tôi',
+            onPressed: () =>
+                _mo(TraGiaScreen(dv: widget.dv, laNguoiBan: false)),
+            icon: const Icon(Icons.handshake_outlined),
           ),
           IconButton(
             tooltip: 'Đơn mua',
