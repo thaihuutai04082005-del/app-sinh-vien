@@ -91,3 +91,11 @@ Chạy app với emulator: `flutter run -d chrome --dart-define=EMULATOR=true` (
 - Đánh giá: người đánh giá cần email đã xác thực HOẶC OTP số điện thoại.
 - Thời gian chuẩn bị tối đa 240 phút là hằng số trong app, chưa nằm trong cấu hình admin.
 - Thư mục Storage của module đều bắt đầu `quan_an_`.
+
+## Chạy và deploy bản web
+Dự án chuyển sang chạy trên trình duyệt (Flutter Web); thư mục `android/` và `ios/` giữ nguyên, không dùng.
+- Chạy thử: `flutter run -d chrome` (thêm `--dart-define=EMULATOR=true` nếu dùng emulator).
+- Build: `flutter build web --release` (ra thư mục `build/web`).
+- Đưa lên mạng: `npx firebase-tools deploy --only hosting` (sau khi build). Link: `https://app-sinh-vien-b6ea4.web.app`.
+- Backend (functions, rules, indexes) deploy riêng như mục "Hướng dẫn deploy" ở trên; mỗi lần sửa giao diện chỉ cần build + deploy hosting.
+- Giới hạn của web: ảnh / video chọn từ máy hoặc dán link (không chụp bằng camera), bản đồ dùng OpenStreetMap, thông báo xem trong app (chưa có thông báo đẩy).

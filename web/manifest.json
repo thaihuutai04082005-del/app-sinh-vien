@@ -1,12 +1,12 @@
 {
-    "name": "app_sinh_vien",
-    "short_name": "app_sinh_vien",
+    "name": "App Sinh Viên",
+    "short_name": "Sinh Viên",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#1565C0",
+    "theme_color": "#1565C0",
+    "description": "Tìm trọ, quán ăn và dịch vụ dành cho sinh viên.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
