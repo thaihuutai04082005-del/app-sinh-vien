@@ -37,9 +37,14 @@ Các nhánh khác được đối chiếu theo tên và email tác giả; không
 - `functions-xe-shop`: 37 kiểm thử đạt, gồm 4 kiểm thử đi qua callable handler thật với Firestore được thay bằng bản giả; kiểm tra xác nhận đơn, báo giá, chấp nhận trả giá và từ chối người không có quyền.
 - `functions-xac-nhan-email`: nạp module và kiểm tra cú pháp đạt; **chưa kiểm tra gửi email**.
 - Đã kiểm tra không mất code module cũ, nền tảng, dependency, codebase Functions và index; `git diff --check` đạt.
-- **Chưa chạy được:** `flutter analyze`, `flutter test`, build web và các kiểm thử Firebase Emulator. Máy chưa có Flutter và proxy từ chối `storage.googleapis.com` (HTTP 403). Các test Flutter mới và `test-rules/xe_shop_rules.test.mjs` chưa được xác minh bằng runner tương ứng. Phải chạy các kiểm tra này trước khi công bố bản gộp đã đạt kiểm thử đầy đủ.
+- Flutter 3.47.6 / Dart 3.13.5: `flutter pub get --enforce-lockfile` và `flutter analyze` đạt, **345 kiểm thử Flutter đạt**, build web release thành công. Các hồi quy callable và bố cục 390/1300 px đã chạy trong bộ test này.
+- Firebase Emulator rules: **74 Tìm trọ + 18 Quán ăn + 9 Xe/Shop đạt**, không lỗi.
+- Artifact web đã được phục vụ qua HTTP nội bộ: index, bootstrap và main.dart.js trả 200; bootstrap không còn template chưa thay thế. Đây là kiểm tra phục vụ artifact, không phải kiểm thử trình duyệt đầu-cuối.
+- E2E trên Auth/Firestore/Functions Emulator khi codebase default và xe-shop cùng được nạp: **29 bước Tìm trọ + 34 bước Quán ăn đạt**. Mỗi suite dùng Emulator mới vì fixture tài khoản của hai suite trùng email.
+- `functions-xe-shop/test-e2e/luong.e2e.js`: **3 luồng đạt qua HTTP thật**, gồm đăng sản phẩm → trả giá → chấp nhận → đặt và nhận hàng; đặt xe → báo giá → nhận chuyến → hoàn thành; mở chat và lưu tin nhắn. Dữ liệu được kiểm tra lại trực tiếp trong Firestore Emulator.
+- Các kiểm tra trên chỉ dùng project demo. Chưa gửi email SMTP hoặc deploy Firebase. Lỗi mạng HTTP 403 trước đây đã được giải quyết sau khi môi trường mới được xuất bản.
 
-## Chạy kiểm tra sau khi có Flutter và quyền mạng
+## Chạy kiểm tra
 
 ```sh
 flutter pub get --enforce-lockfile
@@ -55,3 +60,11 @@ npx --yes firebase-tools@15.35.0 emulators:exec --only firestore,storage --proje
 ```
 
 Backend email sử dụng secret Firebase `SMTP_PASS` và tài khoản gửi đã khai báo trong `functions-xac-nhan-email/index.js`. Luồng mới yêu cầu email được xác nhận trước khi vào app. Cần xác minh các callable email đã được triển khai và SMTP hoạt động trước khi phát hành client; không tự tạo, sao chép hoặc ghi secret vào repository. Không deploy Firebase trong tác vụ tích hợp mã nguồn này.
+
+
+Để chạy E2E, dùng bản sao cấu hình Firebase tạm ngay trong thư mục gốc repository; giữ hai codebase `default`, `xe-shop` và loại `xac-nhan-email` khỏi bản sao để không cần gửi SMTP. Không sửa cấu hình Firebase chính để chạy thử. Dùng khóa ký ngẫu nhiên chỉ dành cho Emulator trong file được bỏ qua `functions/.secret.local` (`TRO_CONG_BI_MAT`, `TK_BI_MAT`, `QA_CONG_BI_MAT`); giữ nguyên file nếu đã có. Với `--project demo-app-sinh-vien`, chạy từng suite trên phiên Emulator mới:
+
+- `node functions/test-e2e/tro_luong.e2e.js`
+- `node functions/test-e2e/quan_an_luong.e2e.js && node --test functions-xe-shop/test-e2e/luong.e2e.js`
+
+Dùng `firebase emulators:exec --config <cấu-hình-tạm-trong-gốc-repo> --only auth,firestore,functions --project demo-app-sinh-vien '<lệnh-test>'`. Xóa cấu hình tạm sau khi xong. Các script E2E Xe/Shop được loại khỏi gói deploy bằng trường `ignore` của codebase `xe-shop`.

@@ -47,7 +47,8 @@
       "ignore": [
         "node_modules",
         ".git",
-        "test"
+        "test",
+        "test-e2e"
       ]
     }
   ],
