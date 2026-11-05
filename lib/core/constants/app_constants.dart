@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 /// Màu sắc, kích thước, chuỗi cố định dùng chung toàn app.
 class AppColors {
-  static const Color primary = Color(0xFF1E88E5);
+  static const Color primary = Color(0xFF0C6B5D);
   static const Color accent = Color(0xFFFF7043);
-  static const Color background = Color(0xFFF5F7FA);
+  static const Color background = Color(0xFFF7FAF8);
 }
 
 class AppSizes {
@@ -31,6 +31,7 @@ class Collections {
   static const String follows = 'follows';
   static const String vuiChoi = 'vui_choi';
   static const String reviews = 'reviews';
+  static const String shopStats = 'shop_stats';
   static const String checkins = 'checkins';
   static const String chats = 'chats';
   static const String messages = 'messages';

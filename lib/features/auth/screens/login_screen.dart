@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../services/auth_service.dart';
+import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -73,6 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
                       decoration: const InputDecoration(
                         labelText: 'Email',
                         border: OutlineInputBorder(),
@@ -88,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _passwordCtrl,
                       obscureText: true,
+                      autofillHints: const [AutofillHints.password],
                       decoration: const InputDecoration(
                         labelText: 'Mật khẩu',
                         border: OutlineInputBorder(),
@@ -95,6 +98,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       validator: (v) => (v == null || v.isEmpty)
                           ? 'Vui lòng nhập mật khẩu'
                           : null,
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _loading
+                            ? null
+                            : () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ForgotPasswordScreen(
+                                    authService: widget.authService,
+                                    initialEmail: _emailCtrl.text,
+                                  ),
+                                ),
+                              ),
+                        child: const Text('Quên mật khẩu?'),
+                      ),
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
@@ -105,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     FilledButton(
                       onPressed: _loading ? null : _submit,
                       child: _loading

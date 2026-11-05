@@ -12,5 +12,8 @@ Future<void> ketNoiEmulator({String host = '127.0.0.1'}) async {
   await FirebaseAuth.instance.useAuthEmulator(host, 9099);
   FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
   FirebaseFunctions.instance.useFunctionsEmulator(host, 5001);
+  FirebaseFunctions.instanceFor(
+    region: 'asia-southeast1',
+  ).useFunctionsEmulator(host, 5001);
   await FirebaseStorage.instance.useStorageEmulator(host, 9199);
 }

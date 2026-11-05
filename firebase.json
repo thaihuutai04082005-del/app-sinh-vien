@@ -20,6 +20,37 @@
       }
     }
   },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "test",
+        "*.local"
+      ]
+    },
+    {
+      "source": "functions-xac-nhan-email",
+      "codebase": "xac-nhan-email",
+      "ignore": [
+        "node_modules",
+        ".git"
+      ]
+    },
+    {
+      "source": "functions-xe-shop",
+      "codebase": "xe-shop",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "test"
+      ]
+    }
+  ],
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
@@ -38,22 +69,28 @@
         "source": "**",
         "destination": "/index.html"
       }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(html|js|json)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
     ]
   },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "test",
-        "*.local"
-      ]
-    }
-  ],
   "emulators": {
     "auth": {
       "port": 9099

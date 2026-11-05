@@ -1,0 +1,61 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../../core/services/image_storage_service.dart';
+import '../../../shared/services/callable_api.dart';
+import '../../../shared/services/chat_service.dart';
+import '../../../shared/services/danh_gia_service.dart';
+import '../../../shared/widgets/image_upload_field.dart';
+import '../../../shared/widgets/video_upload_field.dart';
+import '../../auth/services/xac_thuc_service.dart';
+import 'vi_tri.dart';
+import 'xe_service.dart';
+
+/// Mọi thứ module Xe dọn trọ cần, gom lại để truyền cho các màn hình
+/// (test thay bằng bản giả).
+class XeDichVu {
+  const XeDichVu({
+    required this.uid,
+    required this.xe,
+    required this.storage,
+    required this.xacThuc,
+    required this.danhGia,
+    required this.chat,
+    this.pickImages,
+    this.pickVideo,
+    this.viTri = viTriGeolocator,
+  });
+
+  final String uid;
+  final XeService xe;
+  final ImageStorageService storage;
+
+  /// OTP, danh tính, quyền admin (dùng chung toàn app).
+  final XacThucService xacThuc;
+
+  /// Đọc đánh giá tài xế (viết đánh giá qua [xe]).
+  final DanhGiaService danhGia;
+
+  /// Chat sinh viên ↔ tài xế.
+  final ChatService chat;
+  final ImagePickerCallback? pickImages;
+  final VideoPickerCallback? pickVideo;
+
+  /// Vị trí của máy, tài xế chia sẻ khi đang chuyển.
+  final ViTriStream viTri;
+
+  factory XeDichVu.firebase() {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    return XeDichVu(
+      uid: uid,
+      xe: FirebaseXeService(uid: uid),
+      storage: FirebaseImageStorageService(),
+      xacThuc: FirebaseXacThucService(),
+      danhGia: FirebaseDanhGiaService(),
+      chat: FirebaseChatService(
+        uid: uid,
+        module: 'xe',
+        api: FirebaseCallableApi('xeApi'),
+      ),
+    );
+  }
+}

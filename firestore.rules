@@ -65,40 +65,109 @@ service cloud.firestore {
              && request.resource.data.posts == before('posts')));
     }
 
+    // ================================================================ SHOP ĐỒ RẺ + XE DỌN TRỌ
+    // Mọi ghi (đăng/sửa/xóa sản phẩm, đặt hàng, đặt xe, báo giá, đổi trạng thái) đi qua
+    // Cloud Functions shopApi / xeApi (functions-xe-shop). App chỉ đọc.
+
+    // Sản phẩm: công khai.
     match /products/{id} {
       allow read: if true;
-      allow create: if isCountedPost(id, 'shopId')
-        && request.resource.data.keys().hasOnly(['shopId', 'name', 'images', 'price', 'sizes',
-                                                 'stock', 'category', 'status', 'videos', 'createdAt'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 200
-        && request.resource.data.price is number
-        && request.resource.data.price >= 0
-        && request.resource.data.stock is int
-        && request.resource.data.status == 'active'
-        && isUrlList(request.resource.data.images, 10)
-        && request.resource.data.images.size() > 0
-        && isUrlList(request.resource.data.videos, 1);
-      allow update, delete: if false;
+      allow write: if false;
     }
 
-    match /booking_xe/{id} {
+    // Đơn hàng có địa chỉ, số điện thoại: chỉ người mua và shop của đơn; admin Shop để phân xử trả hàng.
+    match /orders/{id} {
+      allow read: if request.auth != null
+        && (resource.data.buyerId == request.auth.uid || resource.data.shopId == request.auth.uid
+          || laAdmin('shop'));
+      allow write: if false;
+    }
+
+    // Hồ sơ tài xế: công khai để sinh viên chọn xe (app chỉ hiện hồ sơ approval == 'approved').
+    // Ảnh bằng lái ở rieng/giayTo: chỉ chính tài xế và admin Xe dọn trọ.
+    match /xe_don_tro/{uid} {
       allow read: if true;
-      allow create: if isCountedPost(id, 'userId')
-        && request.resource.data.keys().hasOnly(['userId', 'driverId', 'fromAddress', 'toAddress',
-                                                 'itemPhotos', 'quotedPrice', 'scheduledAt', 'status',
-                                                 'videos', 'createdAt'])
-        && request.resource.data.fromAddress is string
-        && request.resource.data.fromAddress.size() > 0
-        && request.resource.data.toAddress is string
-        && request.resource.data.toAddress.size() > 0
-        && request.resource.data.scheduledAt is timestamp
-        && request.resource.data.quotedPrice == null
-        && request.resource.data.status == 'pending'
-        && isUrlList(request.resource.data.itemPhotos, 10)
-        && isUrlList(request.resource.data.videos, 1);
-      allow update, delete: if false;
+      allow write: if false;
+
+      match /rieng/{docId} {
+        allow read: if signedIn() && (request.auth.uid == uid || laAdmin('xe'));
+        allow write: if false;
+      }
+    }
+
+    // Đánh giá Shop / Xe dọn trọ (chỉ người đã mua / đã đặt chuyến, qua hệ thống): công khai.
+    match /reviews/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Trả giá (Make an offer): chỉ người trả giá và shop.
+    match /offers/{id} {
+      allow read: if request.auth != null
+        && (resource.data.buyerId == request.auth.uid || resource.data.shopId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Voucher của shop: công khai để người mua xem / áp mã. Lượt đã dùng của từng người thì không.
+    match /vouchers/{code} {
+      allow read: if true;
+      allow write: if false;
+
+      match /used/{uid} {
+        allow read, write: if false;
+      }
+    }
+
+    // Chat Shop / Xe dọn trọ (mục 7.3): chỉ 2 người trong cuộc đọc. Mở chat, gửi tin qua hệ thống.
+    match /chats/{chatId} {
+      allow read: if signedIn() && (resource == null || request.auth.uid in resource.data.participantIds);
+      allow write: if false;
+
+      match /messages/{msgId} {
+        allow read: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+        allow write: if false;
+      }
+    }
+
+    // Theo dõi / yêu thích (mục 7.3, dùng chung): mỗi người tự ghi / xóa của mình, id cố định
+    // {uid}_{targetType}_{targetId} để không trùng. Theo dõi shop công khai để đếm người theo dõi.
+    match /follows/{id} {
+      allow read: if resource == null
+        || (signedIn() && resource.data.followerId == request.auth.uid)
+        || resource.data.targetType == 'shop';
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['followerId', 'targetId', 'targetType', 'createdAt'])
+        && request.resource.data.followerId == request.auth.uid
+        && request.resource.data.targetType in ['shop', 'product']
+        && request.resource.data.targetId is string
+        && request.resource.data.targetId.size() > 0 && request.resource.data.targetId.size() <= 128
+        && id == request.auth.uid + '_' + request.resource.data.targetType + '_' + request.resource.data.targetId
+        && request.resource.data.createdAt == request.time;
+      allow delete: if signedIn() && resource.data.followerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Điểm đánh giá và hiệu suất (đơn, đơn shop hủy, thời gian xác nhận) cộng dồn của shop: công khai.
+    match /shop_stats/{shopId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Đơn đặt xe có địa chỉ nhà: chỉ người đặt và tài xế được giao đọc.
+    // Ngoại lệ duy nhất app được ghi: tài xế gửi vị trí (vài chục giây một lần) khi đang chuyển,
+    // để không phải gọi Cloud Function liên tục. Chỉ 2 trường vị trí, mốc thời gian là của server.
+    match /booking_xe/{id} {
+      allow read: if request.auth != null
+        && (resource.data.userId == request.auth.uid || resource.data.driverId == request.auth.uid);
+      allow update: if signedIn()
+        && resource.data.driverId == request.auth.uid
+        && resource.data.status == 'in_progress'
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['driverLastLocation', 'driverLocationAt'])
+        && request.resource.data.driverLastLocation is latlng
+        && request.resource.data.driverLocationAt == request.time;
+      allow create, delete: if false;
     }
 
     // Hồ sơ người dùng: chỉ chính chủ đọc/ghi, và phải là tài khoản email (không phải ẩn danh).
