@@ -13,7 +13,14 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.text('Vui chơi'), 200);
+      await tester.scrollUntilVisible(
+        find.text('Vui chơi'),
+        200,
+        scrollable: find.descendant(
+          of: find.byType(CustomScrollView),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
       expect(tester.takeException(), isNull);
     });
   }
