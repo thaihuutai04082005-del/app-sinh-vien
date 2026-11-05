@@ -18,4 +18,3 @@ export function noiDungDanhGia(tham, tieuChi) {
     images: danhSachLink(tham.images, 'ảnh', { max: 5 }),
   };
 }
-
